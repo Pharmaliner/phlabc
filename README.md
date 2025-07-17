@@ -1,0 +1,189 @@
+# PhlAbc
+
+## Table of contents
+
+- [Foreword 📖](#foreword-📖)
+- [Concept 💡](#concept-💡)
+    - [Technical Concept for TYPO3 Extension: Fine-Grained Frontend User Permissions 🛠️🔒](#technical-concept-for-typo3-extension-fine-grained-frontend-user-permissions-🛠️🔒)
+        - [1. Objectives 🎯](#1-objectives-🎯)
+        - [2. Architecture & Core Components 🏗️🔧](#2-architecture--core-components-🏗️🔧)
+            - [2.1 VoterInterface 🗳️🖥️](#21-voterinterface-🗳️🖥️)
+            - [2.2 Implementation of Voters ⚙️👥](#22-implementation-of-voters-⚙️👥)
+            - [2.3 Database Structure 🗄️📊](#23-database-structure-🗄️📊)
+        - [3. Permission Checking Process ✅🔍](#3-permission-checking-process-✅🔍)
+- [Documentation 📚🛠️](#documentation-📚🛠️)
+    - [Installation 📦](#installation-📦)
+    - [Requirements 📋✅](#requirements-📋✅)
+    - [Step-by-step guide 🪜📝](#step-by-step-guide-🪜📝)
+- [Usage Guide 📘](#usage-guide-📘)
+    - [1. Checking User Permissions 🔐](#1-checking-user-permissions-🔐)
+        - [Implementation Example ✅](#implementation-example-✅)
+        - [How It Works 🧠](#how-it-works-🧠)
+        - [Best Practices 🔄](#best-practices-🔄)
+    - [Advanced Usage: Passing a Subject to `vote()` ➕](#advanced-usage-passing-a-subject-to-vote-➕)
+- [Contact](#contact)
+
+
+## Foreword 📖
+In modern web applications, fine-grained control of user permissions plays a crucial role—especially when it comes to access to sensitive content and features in the frontend. The TYPO3 extension **PhlAbc** was developed with exactly this goal in mind: to provide flexible, centralised, and fine-grained management of permissions for frontend users.
+
+Based on the well-established Symfony Voter concept, this extension offers an elegant and powerful architecture that allows access rights to be controlled not only at the action level but also for individual objects. This opens up a wide range of possibilities for developers and administrators to create a secure yet user-friendly experience.
+
+PhlAbc integrates seamlessly with TYPO3 and leverages established mechanisms such as user and group management, as well as role models. The extension places particular emphasis on extensibility and ease of use, enabling it to support both standard applications and complex scenarios.
+
+We hope this extension helps you equip your TYPO3 projects with robust and flexible frontend permission control and wish you every success in meeting your individual requirements.
+
+## Concept 💡
+### Technical Concept for TYPO3 Extension: Fine-Grained Frontend User Permissions 🛠️🔒
+
+#### 1. Objectives 🎯
+
+The extension aims to enable **flexible and centralised control of permissions for frontend users (FE users) at both action and object level**.  
+The solution is based on the Symfony **Voter concept** and allows permission checks for individual controller actions or object access via a central interface (`VoterInterface`).
+
+#### 2. Architecture & Core Components 🏗️🔧
+
+##### 2.1 VoterInterface 🗳️🖥️
+
+- A central interface defining a method `vote(string $permission, mixed $subject = null): bool`.
+- The `vote()` method determines whether the currently logged-in FE user has the requested permission.
+- Optionally, a **subject** (e.g. a domain model) can be passed to enable further detailed checks, such as verifying if the user is the owner of the object.
+
+##### 2.2 Implementation of Voters ⚙️👥
+
+- One or more concrete implementations of the `VoterInterface` encapsulate the business logic for permission checks.
+- Integration with the TYPO3 frontend user session: the currently logged-in user is determined internally by the voter.
+- The voter verifies the passed permission identifier (e.g. `"edit-article"`, `"view-report"`).
+
+##### 2.3 Database Structure 🗄️📊
+
+- **fe_users**: TYPO3’s standard table for frontend users.
+- **fe_groups**: TYPO3’s standard table for frontend user groups.
+- **role**: Custom table containing predefined and custom roles.
+- **permission**: Table storing all defined permissions (e.g. `"edit-article"`, `"delete-record"`).
+- Many-to-many relations:
+    - fe_users ↔ fe_groups
+    - fe_users ↔ role
+    - fe_groups ↔ role
+    - role ↔ permission
+    - permission ↔ fe_users (for direct assignment of permissions to users)
+
+This structure allows flexible assignment of permissions on multiple levels (users, groups, roles, permissions).
+
+#### 3. Permission Checking Process ✅🔍
+
+1. A **controller action** calls `VoterInterface::vote()` with a permission identifier (e.g. `"my-permission-to-access-action"`) either in the constructor or within the action method.
+2. The voter implementation retrieves the currently logged-in FE user from the session.
+3. If a **subject** is provided, the voter verifies whether the user has access to the object or is its creator (based on `cruser_id`).
+4. The voter checks, via the many-to-many relations, whether the user has the relevant permission directly or through groups and roles.
+5. Returns `true` if permission is granted, otherwise `false`.
+6. The controller then enforces access control accordingly (e.g. throws an exception, redirects, or displays an error page).
+
+---
+
+## Documentation 📚🛠️
+
+---
+### Installation 📦
+
+This extension is installed via Composer and **must be added as a regular dependency (`require`)** in your project. It **must not** be added as a development dependency (`require-dev`), as it is required in production.
+
+### Requirements 📋✅
+
+Before installing the extension, ensure your system meets the following requirements:
+
+- **PHP 8.3**
+- **PHP extension `yaml`**
+- **TYPO3 v13 LTS**
+
+### Step-by-step guide 🪜📝
+
+1. **Install the extension via Composer**
+
+    Run the following command in the root directory of your TYPO3 project:
+    ```bash
+    composer require pharmaline/phlabc
+    ```
+
+2. **Update the database schema**
+
+    After installation, execute the following command to apply any required database changes:
+    ```bash
+    vendor/bin/typo3 database:updateschema 
+    ```
+
+---
+### Usage Guide 📘
+
+This section explains how to **use** the extension, focusing on key implementation details.  
+In this part, we demonstrate how to **check user permissions** before accessing a specific controller action using the `VoterInterface`.
+
+#### 1. Checking User Permissions 🔐
+
+To restrict access to a controller action based on user permissions, the extension provides a `VoterInterface`. This allows you to check whether a user is authorized to execute a particular action.
+
+##### Implementation Example ✅
+
+```php
+use Pharmaline\PhlAbc\Security\VoterInterface;
+use TYPO3\CMS\Extbase\Mvc\Controller\ActionController;
+use Psr\Http\Message\ResponseInterface;
+
+class ExampleController extends ActionController
+{
+    public function __construct(
+        private readonly VoterInterface $voter,
+    ) {
+    }
+
+    public function indexAction(): ResponseInterface
+    {
+        if ($this->voter->vote('my-permission-to-access-action') === false) {
+            // Access denied
+            // You can throw an exception, redirect, or show an error message
+        }
+
+        // Access granted
+        // Continue with the rest of the action logic
+
+        // Example return (adjust to your real return logic)
+        return $this->htmlResponse('Access granted');
+    }
+}
+```
+##### How It Works 🧠
+
+- The `VoterInterface` is used to **abstract and centralize permission logic**.
+- Call the `vote()` method with a **string-based permission identifier**.
+- If the method returns `false`, the user **is not authorized** to perform the action.
+- The currently logged-in FrontendUser is automatically determined from the session within the VoterInterface.
+  It is therefore not necessary to explicitly pass the user object or user ID when calling vote().
+
+##### Best Practices 🔄
+
+- Use semantic permission names like `view-report`, `edit-user`, `delete-record`, etc.
+- Centralize permission logic inside voters to keep controllers clean.
+- Consider throwing `AccessDeniedException` or using TYPO3’s FlashMessage system for unauthorized access.
+
+#### Advanced Usage: Passing a Subject to `vote()` ➕
+
+The `vote()` method can optionally accept a **subject**, which may be an object or an array. The requirements are:
+
+- The subject must have an array key `"cruser_id"`
+- **Or** a property `cruser_id` including getter methods.
+
+If neither condition is met, a `MissingOwnerAttributeInObjectException` will be thrown.
+
+The function then verifies whether the user, identified from the session, either:
+
+- Has the rights to access the subject, **or**
+- Is the creator of the object (determined via `cruser_id`).
+
+---
+
+## Contact
+If you have any questions, problems or suggestions for improving the extension, please feel free to contact us:
+
+|  |                                                                                                                                                                                                                                                                       |
+|---|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Publisher**<br>- **Name:** Pharmaline GmbH<br>- **E-Mail:** info@pharmaline.de<br>- **GitHub Issues:** [https://github.com/Pharmaliner/phlabc/issues](https://github.com/Pharmaliner/phlabc/issues)<br>- **Website:** [https://www.pharmaline.de/](https://www.pharmaline.de/) | **Developer**<br>- **Name:** MCEikens<br>- **E-Mail:** dialog@mceikens.de<br>- **GitHub Issues:** [https://github.com/Pharmaliner/phlabc/issues](https://github.com/Pharmaliner/phlabc/issues)<br>- **Website:** [https://www.mceikens.de/](https://www.mceikens.de/) |
