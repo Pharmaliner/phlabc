@@ -1,0 +1,12 @@
+services:
+  _defaults:
+    autowire: true
+    autoconfigure: true
+    public: false
+
+  Pharmaline\PhlAbc\:
+    resource: '../src/*'
+    exclude: '../src/Domain/Model/*'
+
+  Pharmaline\PhlAbc\Security\VoterInterface:
+    alias: Pharmaline\PhlAbc\Security\Voter

@@ -1,0 +1,50 @@
+{
+  "name": "pharmaline/phlabc",
+  "description": "Pharmaline Extension to manage access to objects, content and actions with permissions.",
+  "autoload": {
+    "psr-4": {
+      "Pharmaline\\PhlAbc\\": "src"
+    }
+  },
+  "license": "GPL-3.0-or-later",
+  "type": "typo3-cms-extension",
+  "version": "1.0.0",
+  "authors": [
+    {
+      "name": "Christian Platt",
+      "role": "Project Owner",
+      "email": "christian.platt@pharmaline.de",
+      "homepage": "https://www.pharmaline.de"
+    },
+    {
+      "name": "Jacco Van der Post",
+      "role": "Maintainer",
+      "email": "jacco@id-webdesign.nl",
+      "homepage": "https://www.pharmaline.de"
+    },
+    {
+      "name": "Eike Drost",
+      "role": "Maintainer",
+      "email": "eike.drost@mceikens.de",
+      "homepage": "https://www.mceikens.de"
+    }
+  ],
+  "minimum-stability": "stable",
+  "require": {
+    "php": "^8.3",
+    "ext-yaml": "*",
+    "typo3/cms-cli": "^3.1",
+    "typo3/cms-core": "^13",
+    "typo3/cms-extbase": "^13",
+    "typo3/cms-felogin": "^13",
+    "typo3/cms-fluid": "^13.4",
+    "typo3/cms-frontend": "^13",
+    "composer/composer": "^2.8",
+    "symfony/console": "^7.3"
+  },
+  "extra": {
+    "typo3/cms": {
+      "extension-key": "phlabc"
+    }
+  }
+}
