@@ -180,8 +180,58 @@ The function then verifies whether the user, identified from the session, either
 - Is the creator of the object (determined via `cruser_id`).
 
 ---
+### ViewHelper
+The `VoterViewHelper` allows conditional rendering in Fluid templates based on custom permission logic implemented in a `VoterInterface`.  
+It enables clean and reusable access control in the view layer.
 
-### Technical Documentation: Integration of the Extension with Permissions, Roles, and Presets
+---
+
+#### 🛠️ ViewHelper Declaration
+
+```php
+Pharmaline\PhlAbc\ViewHelpers\VoterViewHelper
+```
+
+To use it in your Fluid templates, register the namespace:
+```html
+{namespace phl=Pharmaline\PhlAbc\ViewHelpers}
+```
+
+#### 🔧 Parameters
+
+| Name           | Required | Type              | Description                                                      |
+|----------------|----------|-------------------|------------------------------------------------------------------|
+| `permission_key` | ✅ Yes   | string or bool  | The permission identifier to check (e.g. 'edit_post', 'view_invoice') |
+| `subject`      | ❌ No    | mixed             | Optional context object used during evaluation (e.g. domain object, model) |
+
+
+#### ✅ Basic Usage Example
+
+```html
+<phl:voter permission_key="edit_post" subject="{post}">
+    <f:then>
+        <a href="edit/{post.uid}">Edit Post</a>
+    </f:then>
+    <f:else>
+        <span>You do not have permission to edit this post.</span>
+    </f:else>
+</phl:voter>
+```
+
+#### 🔄 Alternative Example Without a Subject
+This works for permission keys that do not require a context object:
+
+```html
+<phl:voter permission_key="access_admin_panel">
+    <f:then>
+        <li><a href="/admin">Admin Panel</a></li>
+    </f:then>
+</phl:voter>
+```
+
+---
+
+### Integration of the Extension with Permissions, Roles, and Presets
 
 #### Overview
 
