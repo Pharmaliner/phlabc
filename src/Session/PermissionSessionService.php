@@ -96,8 +96,10 @@ class PermissionSessionService
         }
     }
 
-    // @TODO relation between permission and user is necessary
-    // @TODO relation between permission and frontend group is necessary
+    /**
+     * @param AbstractUserAuthentication $sessionUser
+     * @return void
+     */
     public function setPermissions(AbstractUserAuthentication $sessionUser): void
     {
         $user = $this->frontendUserRepository->findByUid($sessionUser->getUserId());
