@@ -2,8 +2,6 @@
 
 namespace Pharmaline\PhlAbc\Security;
 
-use Pharmaline\PhlAbc\Domain\Repository\FrontendGroupRepository;
-use Pharmaline\PhlAbc\Domain\Repository\FrontendUserRepository;
 use Pharmaline\PhlAbc\Exception\MissingOwnerAttributeInObjectException;
 use TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication;
 
