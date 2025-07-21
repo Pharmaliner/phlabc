@@ -12,15 +12,30 @@
             - [2.3 Database Structure 🗄️📊](#23-database-structure-)
         - [3. Permission Checking Process ✅🔍](#3-permission-checking-process-)
 - [Documentation 📚🛠️](#documentation-)
-    - [Installation 📦](#installation-)
-    - [Requirements 📋✅](#requirements-)
-    - [Step-by-step guide 🪜📝](#step-by-step-guide-)
-- [Usage Guide 📘](#usage-guide-)
+  - [Installation 📦](#installation-)
+  - [Requirements 📋✅](#requirements-)
+  - [Step-by-step guide 🪜📝](#step-by-step-guide-)
+  - [Usage Guide 📘](#usage-guide-)
     - [1. Checking User Permissions 🔐](#1-checking-user-permissions-)
-        - [Implementation Example ✅](#implementation-example-)
-        - [How It Works 🧠](#how-it-works-)
-        - [Best Practices 🔄](#best-practices-)
+    - [Implementation Example ✅](#implementation-example-)
+    - [How It Works 🧠](#how-it-works-)
+    - [Best Practices 🔄](#best-practices-)
     - [Advanced Usage: Passing a Subject to `vote()` ➕](#advanced-usage-passing-a-subject-to-vote-)
+    - [ViewHelper](#viewhelper)
+      - [Declaration](#-viewhelper-declaration)
+      - [Parameters](#-parameters)
+      - [Basic Usage Example](#-basic-usage-example)
+      - [Alternative Example Without a Subject](#-alternative-example-without-a-subject)
+    - [Integration of the Extension with Permissions, Roles, and Presets](#integration-of-the-extension-with-permissions-roles-and-presets)
+      - [Overview](#overview)
+      - [1. Integration in composer.json](#1-integration-in-composerjson)
+      - [2. Definition of Permissions (permissions.yaml)](#2-definition-of-permissions-permissionsyaml)
+      - [3. Definition of Roles (roles.yaml)](#3-definition-of-roles-rolesyaml)
+      - [4. Definition of Presets (presets.yaml)](#4-definition-of-presets-presetsyaml)
+      - [5. Specials and Advanced Features for Presets](#5-specials-and-advanced-features-for-presets)
+        - [5.1 Wildcard *](#51-wildcard-)
+        - [5.2 Partial Wildcards PART_OF_PERMISSION_NAME_*](#52-partial-wildcards-part_of_permission_name_)
+      - [6. Importing the Configuration](#6-importing-the-configuration)
 - [Contact](#contact)
 
 
@@ -180,13 +195,13 @@ The function then verifies whether the user, identified from the session, either
 - Is the creator of the object (determined via `cruser_id`).
 
 ---
-### ViewHelper
+#### ViewHelper
 The `VoterViewHelper` allows conditional rendering in Fluid templates based on custom permission logic implemented in a `VoterInterface`.  
 It enables clean and reusable access control in the view layer.
 
 ---
 
-#### 🛠️ ViewHelper Declaration
+##### 🛠️ ViewHelper Declaration
 
 ```php
 Pharmaline\PhlAbc\ViewHelpers\VoterViewHelper
@@ -197,7 +212,7 @@ To use it in your Fluid templates, register the namespace:
 {namespace phl=Pharmaline\PhlAbc\ViewHelpers}
 ```
 
-#### 🔧 Parameters
+##### 🔧 Parameters
 
 | Name           | Required | Type              | Description                                                      |
 |----------------|----------|-------------------|------------------------------------------------------------------|
@@ -205,7 +220,7 @@ To use it in your Fluid templates, register the namespace:
 | `subject`      | ❌ No    | mixed             | Optional context object used during evaluation (e.g. domain object, model) |
 
 
-#### ✅ Basic Usage Example
+##### ✅ Basic Usage Example
 
 ```html
 <phl:voter permission_key="edit_post" subject="{post}">
@@ -218,7 +233,7 @@ To use it in your Fluid templates, register the namespace:
 </phl:voter>
 ```
 
-#### 🔄 Alternative Example Without a Subject
+##### 🔄 Alternative Example Without a Subject
 This works for permission keys that do not require a context object:
 
 ```html
@@ -231,15 +246,15 @@ This works for permission keys that do not require a context object:
 
 ---
 
-### Integration of the Extension with Permissions, Roles, and Presets
+#### Integration of the Extension with Permissions, Roles, and Presets
 
-#### Overview
+##### Overview
 
 This documentation describes the integration of an extension that defines and manages permissions, roles, and presets within a system. The configuration is done via the extension’s `composer.json`, which references YAML files for permissions, roles, and presets.
 
 ---
 
-#### 1. Integration in composer.json
+##### 1. Integration in composer.json
 
 In the extension’s `composer.json`, an `extra` section must be added under the namespace of the extension (`pharmaline/abc`), pointing to the respective YAML configuration files:
 
@@ -257,7 +272,7 @@ In the extension’s `composer.json`, an `extra` section must be added under the
 - permissions: Path to the YAML file defining permissions
 
 
-#### 2. Definition of Permissions (permissions.yaml)
+##### 2. Definition of Permissions (permissions.yaml)
 This file defines individual permissions in YAML format:
 
 ```yaml
@@ -270,7 +285,7 @@ permissions:
 - title: Human-readable title of the permission 
 - description: Description of the permission
 
-#### 3. Definition of Roles (roles.yaml)
+##### 3. Definition of Roles (roles.yaml)
 This file defines user roles in the system:
 
 ```yaml
@@ -283,7 +298,7 @@ roles:
 - title: Human-readable title of the role
 - description: Description of the role
 
-#### 4. Definition of Presets (presets.yaml)
+##### 4. Definition of Presets (presets.yaml)
 Presets are predefined sets of permissions assigned to roles:
 
 ```yaml
@@ -296,15 +311,15 @@ presets:
 - role: Role key from roles.yaml to which the preset applies
 - permissions: List of permission keys from permissions.yaml assigned to the role
 
-#### 5. Specials and Advanced Features for Presets
-##### 5.1 Wildcard *
+##### 5. Specials and Advanced Features for Presets
+###### 5.1 Wildcard *
 Assigning "*" as a permission in a preset means all available permissions are assigned to that role.
 
-##### 5.2 Partial Wildcards PART_OF_PERMISSION_NAME_*
+###### 5.2 Partial Wildcards PART_OF_PERMISSION_NAME_*
 Using a pattern like EXAMPLE_* assigns all permissions starting with the prefix EXAMPLE_ to the role.
 For example, EXAMPLE_* covers permissions such as EXAMPLE_VIEW_LIST, EXAMPLE_VIEW_DETAIL, etc.
 
-#### 6. Importing the Configuration
+##### 6. Importing the Configuration
 The YAML configurations are not automatically imported during composer updates and must be explicitly imported using a CLI command.
 
 **Import Command:**
