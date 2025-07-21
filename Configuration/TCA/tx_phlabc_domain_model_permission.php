@@ -16,6 +16,9 @@ return [
         ],
         'searchFields' => 'title,permission_key,description',
         'iconfile' => 'EXT:phlabc/Resources/Public/Icons/permission.svg',
+        'security' => [
+            'ignorePageTypeRestriction' => true,
+        ],
     ],
     'types' => [
         '0' => ['showitem' => 'permission_key, title, description'],

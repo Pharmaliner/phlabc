@@ -7,9 +7,10 @@ use TYPO3\CMS\Extbase\Persistence\ObjectStorage;
 
 class Role extends AbstractEntity
 {
-    protected string $name;
+    protected string $roleKey;
+    protected string $title;
     protected string $description;
-    protected bool $is_custom_role;
+    protected bool $isCustomRole;
 
     /**
      * @var ?ObjectStorage<FrontendUser>
@@ -29,18 +30,18 @@ class Role extends AbstractEntity
     /**
      * @return string
      */
-    public function getName(): string
+    public function getTitle(): string
     {
-        return $this->name;
+        return $this->title;
     }
 
     /**
-     * @param string $name
+     * @param string $title
      * @return void
      */
-    public function setName(string $name): void
+    public function setTitle(string $title): void
     {
-        $this->name = $name;
+        $this->title = $title;
     }
 
     /**
@@ -60,21 +61,14 @@ class Role extends AbstractEntity
         $this->description = $description;
     }
 
-    /**
-     * @return bool
-     */
-    public function isIsCustomRole(): bool
+    public function isCustomRole(): bool
     {
-        return $this->is_custom_role;
+        return $this->isCustomRole;
     }
 
-    /**
-     * @param bool $is_custom_role
-     * @return void
-     */
-    public function setIsCustomRole(bool $is_custom_role): void
+    public function setIsCustomRole(bool $isCustomRole): void
     {
-        $this->is_custom_role = $is_custom_role;
+        $this->isCustomRole = $isCustomRole;
     }
 
     /**
@@ -180,5 +174,22 @@ class Role extends AbstractEntity
     public function removeFrontendGroup(FrontendGroup $frontendGroup): void
     {
         $this->frontendGroups?->detach($frontendGroup);
+    }
+
+    /**
+     * @return string
+     */
+    public function getRoleKey(): string
+    {
+        return $this->roleKey;
+    }
+
+    /**
+     * @param string $roleKey
+     * @return void
+     */
+    public function setRoleKey(string $roleKey): void
+    {
+        $this->roleKey = $roleKey;
     }
 }

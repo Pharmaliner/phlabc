@@ -3,7 +3,7 @@
 return [
     'ctrl' => [
         'title' => 'Role',
-        'label' => 'name',
+        'label' => 'role_key',
         'tstamp' => 'tstamp',
         'crdate' => 'crdate',
         'cruser_id' => 'cruser_id',
@@ -14,13 +14,17 @@ return [
         'enablecolumns' => [
             'disabled' => 'hidden',
         ],
-        'searchFields' => 'name,description',
+        'searchFields' => 'role_key,title,description',
         'iconfile' => 'EXT:phlabc/Resources/Public/Icons/role.svg',
+        'security' => [
+            'ignorePageTypeRestriction' => true,
+        ],
     ],
     'types' => [
         '0' => [
             'showitem' => '
-                name, 
+                title, 
+                role_key, 
                 description, 
                 is_custom_role,
                 frontend_users,
@@ -36,12 +40,18 @@ return [
                 'type' => 'check',
             ],
         ],
-        'name' => [
-            'label' => 'Name',
+        'role_key' => [
+            'label' => 'Role key',
             'config' => [
                 'type' => 'input',
-                'size' => 30,
-                'eval' => 'required',
+                'required' => 'true',
+            ],
+        ],
+        'title' => [
+            'label' => 'Title',
+            'config' => [
+                'type' => 'input',
+                'required' => 'true',
             ],
         ],
         'description' => [
@@ -87,14 +97,13 @@ return [
         ],
         'permissions' => [
             'label' => 'Permissions',
+            'exclude' => true,
             'config' => [
                 'type' => 'select',
                 'renderType' => 'selectMultipleSideBySide',
                 'foreign_table' => 'tx_phlabc_domain_model_permission',
                 'MM' => 'tx_phlabc_role_permission_mm',
-                'size' => 10,
-                'autoSizeMax' => 30,
-                'multiple' => 0,
+                'foreign_table_where' => 'AND 1=1',
             ],
         ],
     ],
