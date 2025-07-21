@@ -40,7 +40,8 @@
     "typo3/cms-fluid": "^13.4",
     "typo3/cms-frontend": "^13",
     "composer/composer": "^2.8",
-    "symfony/console": "^7.3"
+    "symfony/console": "^7.3",
+    "typo3fluid/fluid": "^4.3.0"
   },
   "extra": {
     "typo3/cms": {
