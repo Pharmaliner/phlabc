@@ -42,9 +42,9 @@ The function then verifies whether the user, identified from the session, either
 - Is the creator of the object (determined via `cruser_id`).
 
 ### Implementation Example ✅
-- [Integration in Controller](./VoterController.md)
-- [Integration in Service](./VoterService.md)
-- [Integration in Static Classes](./VoterStaticAccess.md)
+- [Integration in Controller](./Controller.md)
+- [Integration in Service](./Service.md)
+- [Integration in Static Classes](./StaticAccess.md)
 
 
 
