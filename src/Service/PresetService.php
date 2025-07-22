@@ -30,8 +30,6 @@ class PresetService
         $this->typo3QuerySettings->setRespectStoragePage(false);
         $this->permissionRepository->setDefaultQuerySettings($this->typo3QuerySettings);
         $this->roleRepository->setDefaultQuerySettings($this->typo3QuerySettings);
-
-
     }
 
     /**
