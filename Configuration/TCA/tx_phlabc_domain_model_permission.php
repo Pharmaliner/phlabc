@@ -17,9 +17,12 @@ return [
             'disabled' => 'hidden',
         ],
         'searchFields' => 'title,permission_key,description',
-        'iconfile' => 'EXT:phlabc/Resources/Public/Icons/permission.svg',
+        'iconfile' => 'EXT:phlabc/Resources/Public/Icons/Extension.png',
         'security' => [
             'ignorePageTypeRestriction' => true,
+        ],
+        'typeicon_classes' => [
+            'default' => 'tx-phlabc-logo-short',
         ],
     ],
     'types' => [

@@ -17,7 +17,10 @@ return [
             'disabled' => 'hidden',
         ],
         'searchFields' => 'role_key,title,description',
-        'iconfile' => 'EXT:phlabc/Resources/Public/Icons/role.svg',
+        'iconfile' => 'EXT:phlabc/Resources/Public/Icons/Extension.png',
+        'typeicon_classes' => [
+            'default' => 'tx-phlabc-logo-short',
+        ],
         'security' => [
             'ignorePageTypeRestriction' => true,
         ],
