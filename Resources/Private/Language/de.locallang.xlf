@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<xliff version="1.0">
+    <file source-language="en" datatype="plaintext" original="messages" date="2026-01-25T12:00:00Z" product-name="phlabc" target-language="de">
+        <header/>
+        <body>
+            <!-- Role Model -->
+            <trans-unit id="tx_phlabc_domain_model_role">
+                <source>Role</source>
+                <target>Rolle</target>
+            </trans-unit>
+            <trans-unit id="tx_phlabc_domain_model_role.hidden">
+                <source>Hidden</source>
+                <target>Versteckt</target>
+            </trans-unit>
+            <trans-unit id="tx_phlabc_domain_model_role.role_key">
+                <source>Role Key</source>
+                <target>Rollen-Schlüssel</target>
+            </trans-unit>
+            <trans-unit id="tx_phlabc_domain_model_role.title">
+                <source>Title</source>
+                <target>Titel</target>
+            </trans-unit>
+            <trans-unit id="tx_phlabc_domain_model_role.description">
+                <source>Description</source>
+                <target>Beschreibung</target>
+            </trans-unit>
+            <trans-unit id="tx_phlabc_domain_model_role.custom_role">
+                <source>Custom Role</source>
+                <target>Benutzerdefinierte Rolle</target>
+            </trans-unit>
+            <trans-unit id="tx_phlabc_domain_model_role.frontend_users">
+                <source>Frontend Users</source>
+                <target>Frontend-Benutzer</target>
+            </trans-unit>
+            <trans-unit id="tx_phlabc_domain_model_role.frontend_groups">
+                <source>Frontend Groups</source>
+                <target>Frontend-Gruppen</target>
+            </trans-unit>
+            <trans-unit id="tx_phlabc_domain_model_role.permissions">
+                <source>Permissions</source>
+                <target>Berechtigungen</target>
+            </trans-unit>
+            <trans-unit id="tx_phlabc_domain_model_role.permissions_deny">
+                <source>Permission Deny</source>
+                <target>Berechtigungen verweigern</target>
+            </trans-unit>
+            <trans-unit id="tx_phlabc_domain_model_role.title_translation_key">
+                <source>Title Translation Key</source>
+                <target>Titel-Übersetzungsschlüssel</target>
+            </trans-unit>
+            <trans-unit id="tx_phlabc_domain_model_role.description_translation_key">
+                <source>Description Translation Key</source>
+                <target>Beschreibungs-Übersetzungsschlüssel</target>
+            </trans-unit>
+            <trans-unit id="tx_phlabc_domain_model_role.additional_data">
+                <source>Additional Data</source>
+                <target>Zusätzliche Daten</target>
+            </trans-unit>
+
+            <!-- Permission Model -->
+            <trans-unit id="tx_phlabc_domain_model_permission">
+                <source>Permission</source>
+                <target>Berechtigung</target>
+            </trans-unit>
+            <trans-unit id="tx_phlabc_domain_model_permission.hidden">
+                <source>Hidden</source>
+                <target>Versteckt</target>
+            </trans-unit>
+            <trans-unit id="tx_phlabc_domain_model_permission.permission_key">
+                <source>Permission Key</source>
+                <target>Berechtigungs-Schlüssel</target>
+            </trans-unit>
+            <trans-unit id="tx_phlabc_domain_model_permission.title">
+                <source>Title</source>
+                <target>Titel</target>
+            </trans-unit>
+            <trans-unit id="tx_phlabc_domain_model_permission.description">
+                <source>Description</source>
+                <target>Beschreibung</target>
+            </trans-unit>
+            <trans-unit id="tx_phlabc_domain_model_permission.title_translation_key">
+                <source>Title Translation Key</source>
+                <target>Titel-Übersetzungsschlüssel</target>
+            </trans-unit>
+            <trans-unit id="tx_phlabc_domain_model_permission.description_translation_key">
+                <source>Description Translation Key</source>
+                <target>Beschreibungs-Übersetzungsschlüssel</target>
+            </trans-unit>
+            <trans-unit id="tx_phlabc_domain_model_permission.categories">
+                <source>Categories</source>
+                <target>Kategorien</target>
+            </trans-unit>
+            <trans-unit id="tx_phlabc_domain_model_permission.roles">
+                <source>Roles</source>
+                <target>Rollen</target>
+            </trans-unit>
+            <trans-unit id="tx_phlabc_domain_model_permission.roles_deny">
+                <source>Roles Deny</source>
+                <target>Rollen verweigern</target>
+            </trans-unit>
+
+            <!-- Frontend Users Extensions -->
+            <trans-unit id="fe_users.roles">
+                <source>Roles</source>
+                <target>Rollen</target>
+            </trans-unit>
+            <trans-unit id="fe_users.permissions">
+                <source>Permissions</source>
+                <target>Berechtigungen</target>
+            </trans-unit>
+            <trans-unit id="fe_users.permissions_deny">
+                <source>Permission Deny</source>
+                <target>Berechtigungen verweigern</target>
+            </trans-unit>
+            <trans-unit id="fe_users.parent_frontend_user">
+                <source>Parent Frontend User</source>
+                <target>Übergeordneter Frontend-Benutzer</target>
+            </trans-unit>
+
+            <!-- Frontend Groups Extensions -->
+            <trans-unit id="fe_groups.roles">
+                <source>Roles</source>
+                <target>Rollen</target>
+            </trans-unit>
+            <trans-unit id="fe_groups.permissions_deny">
+                <source>Permission Deny</source>
+                <target>Berechtigungen verweigern</target>
+            </trans-unit>
+
+            <!-- Frontend Users & Groups Tab labels -->
+            <trans-unit id="fe_users.tabs.phlabc">
+                <source>phlabc</source>
+                <target>phlabc</target>
+            </trans-unit>
+            <trans-unit id="fe_groups.tabs.phlabc">
+                <source>phlabc</source>
+                <target>phlabc</target>
+            </trans-unit>
+
+            <!-- Tab labels -->
+            <trans-unit id="tx_phlabc_domain_model_role.tabs.general">
+                <source>General</source>
+                <target>Allgemein</target>
+            </trans-unit>
+            <trans-unit id="tx_phlabc_domain_model_role.tabs.users_groups">
+                <source>Users &amp; Groups</source>
+                <target>Benutzer &amp; Gruppen</target>
+            </trans-unit>
+            <trans-unit id="tx_phlabc_domain_model_role.tabs.permissions">
+                <source>Permissions</source>
+                <target>Berechtigungen</target>
+            </trans-unit>
+            <trans-unit id="tx_phlabc_domain_model_permission.tabs.general">
+                <source>General</source>
+                <target>Allgemein</target>
+            </trans-unit>
+            <trans-unit id="tx_phlabc_domain_model_permission.tabs.roles">
+                <source>Roles</source>
+                <target>Rollen</target>
+            </trans-unit>
+        </body>
+    </file>
+</xliff>

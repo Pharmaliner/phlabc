@@ -10,7 +10,9 @@ class Role extends AbstractEntity
     protected string $roleKey;
     protected string $title;
     protected string $description;
-    protected bool $isCustomRole;
+    protected ?int $customRole = null;
+    protected string $titleTranslationKey = '';
+    protected string $descriptionTranslationKey = '';
 
     /**
      * @var ?ObjectStorage<FrontendUser>
@@ -28,6 +30,21 @@ class Role extends AbstractEntity
     public ?ObjectStorage $frontendGroups = null;
 
     /**
+     * @var ?ObjectStorage<Permission>
+     */
+    public ?ObjectStorage $permissionsDeny = null;
+
+    protected string $additionalData = '';
+
+    public function __construct()
+    {
+        $this->permissions = new ObjectStorage();
+        $this->permissionsDeny = new ObjectStorage();
+        $this->frontendGroups = new ObjectStorage();
+        $this->frontendUsers = new ObjectStorage();
+    }
+
+    /**
      * @return string
      */
     public function getTitle(): string
@@ -37,7 +54,6 @@ class Role extends AbstractEntity
 
     /**
      * @param string $title
-     * @return void
      */
     public function setTitle(string $title): void
     {
@@ -54,21 +70,20 @@ class Role extends AbstractEntity
 
     /**
      * @param string $description
-     * @return void
      */
     public function setDescription(string $description): void
     {
         $this->description = $description;
     }
 
-    public function isCustomRole(): bool
+    public function getCustomRole(): ?int
     {
-        return $this->isCustomRole;
+        return $this->customRole;
     }
 
-    public function setIsCustomRole(bool $isCustomRole): void
+    public function setCustomRole(?int $customRole): void
     {
-        $this->isCustomRole = $isCustomRole;
+        $this->customRole = $customRole;
     }
 
     /**
@@ -81,7 +96,6 @@ class Role extends AbstractEntity
 
     /**
      * @param ?ObjectStorage<FrontendUser> $frontendUsers
-     * @return void
      */
     public function setFrontendUsers(?ObjectStorage $frontendUsers): void
     {
@@ -90,7 +104,6 @@ class Role extends AbstractEntity
 
     /**
      * @param FrontendUser $frontendUser
-     * @return void
      */
     public function addFrontendUser(FrontendUser $frontendUser): void
     {
@@ -99,7 +112,6 @@ class Role extends AbstractEntity
 
     /**
      * @param FrontendUser $frontendUser
-     * @return void
      */
     public function removeFrontendUser(FrontendUser $frontendUser): void
     {
@@ -116,7 +128,6 @@ class Role extends AbstractEntity
 
     /**
      * @param ?ObjectStorage<Permission> $permissions
-     * @return void
      */
     public function setPermissions(?ObjectStorage $permissions): void
     {
@@ -125,7 +136,6 @@ class Role extends AbstractEntity
 
     /**
      * @param Permission $permission
-     * @return void
      */
     public function addPermission(Permission $permission): void
     {
@@ -134,7 +144,6 @@ class Role extends AbstractEntity
 
     /**
      * @param Permission $permission
-     * @return void
      */
     public function removePermission(Permission $permission): void
     {
@@ -151,7 +160,6 @@ class Role extends AbstractEntity
 
     /**
      * @param ?ObjectStorage<FrontendGroup> $frontendGroups
-     * @return void
      */
     public function setFrontendGroups(?ObjectStorage $frontendGroups): void
     {
@@ -160,7 +168,6 @@ class Role extends AbstractEntity
 
     /**
      * @param FrontendGroup $frontendGroup
-     * @return void
      */
     public function addFrontendGroup(FrontendGroup $frontendGroup): void
     {
@@ -169,7 +176,6 @@ class Role extends AbstractEntity
 
     /**
      * @param FrontendGroup $frontendGroup
-     * @return void
      */
     public function removeFrontendGroup(FrontendGroup $frontendGroup): void
     {
@@ -186,10 +192,65 @@ class Role extends AbstractEntity
 
     /**
      * @param string $roleKey
-     * @return void
      */
     public function setRoleKey(string $roleKey): void
     {
         $this->roleKey = $roleKey;
+    }
+
+    public function getPermissionsDeny(): ?ObjectStorage
+    {
+        return $this->permissionsDeny;
+    }
+
+    public function setPermissionsDeny(?ObjectStorage $permissionsDeny): void
+    {
+        $this->permissionsDeny = $permissionsDeny;
+    }
+
+    /**
+     * @param Permission $permission
+     */
+    public function addPermissionDeny(Permission $permission): void
+    {
+        $this->permissionsDeny?->attach($permission);
+    }
+
+    /**
+     * @param Permission $permission
+     */
+    public function removePermissionDeny(Permission $permission): void
+    {
+        $this->permissionsDeny?->detach($permission);
+    }
+
+    public function getAdditionalData(): string
+    {
+        return $this->additionalData;
+    }
+
+    public function setAdditionalData(string $additionalData): void
+    {
+        $this->additionalData = $additionalData;
+    }
+
+    public function getTitleTranslationKey(): string
+    {
+        return $this->titleTranslationKey;
+    }
+
+    public function setTitleTranslationKey(string $titleTranslationKey): void
+    {
+        $this->titleTranslationKey = $titleTranslationKey;
+    }
+
+    public function getDescriptionTranslationKey(): string
+    {
+        return $this->descriptionTranslationKey;
+    }
+
+    public function setDescriptionTranslationKey(string $descriptionTranslationKey): void
+    {
+        $this->descriptionTranslationKey = $descriptionTranslationKey;
     }
 }

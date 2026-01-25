@@ -13,6 +13,11 @@ class FrontendGroup extends AbstractEntity
     public ?ObjectStorage $roles = null;
 
     /**
+     * @var ?ObjectStorage<Permission>
+     */
+    public ?ObjectStorage $permissionsDeny = null;
+
+    /**
      * @return ?ObjectStorage<Role>
      */
     public function getRoles(): ?ObjectStorage
@@ -22,7 +27,6 @@ class FrontendGroup extends AbstractEntity
 
     /**
      * @param ?ObjectStorage<Role> $roles
-     * @return void
      */
     public function setRoles(?ObjectStorage $roles): void
     {
@@ -31,7 +35,6 @@ class FrontendGroup extends AbstractEntity
 
     /**
      * @param Role $role
-     * @return void
      */
     public function addRole(Role $role): void
     {
@@ -40,10 +43,35 @@ class FrontendGroup extends AbstractEntity
 
     /**
      * @param Role $role
-     * @return void
      */
     public function removeRole(Role $role): void
     {
         $this->roles?->detach($role);
+    }
+
+    public function getPermissionsDeny(): ?ObjectStorage
+    {
+        return $this->permissionsDeny;
+    }
+
+    public function setPermissionsDeny(?ObjectStorage $permissionsDeny): void
+    {
+        $this->permissionsDeny = $permissionsDeny;
+    }
+
+    /**
+     * @param Permission $permission
+     */
+    public function addPermissionDeny(Permission $permission): void
+    {
+        $this->permissionsDeny?->attach($permission);
+    }
+
+    /**
+     * @param Permission $permission
+     */
+    public function removePermissionDeny(Permission $permission): void
+    {
+        $this->permissionsDeny?->detach($permission);
     }
 }

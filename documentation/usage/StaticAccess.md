@@ -1,41 +1,45 @@
 Overview
 --------
 
-The ExampleServiceStatic class implements a **static access pattern** to a Voter service responsible for permission checks. It uses a VoterServiceLocator to inject the VoterInterface implementation into a static context, enabling permission validation even without an object instance.
+The ExampleServiceStatic class implements a **static access pattern** to a SecurityManager service responsible for permission checks. It uses a StaticServiceLocator to inject the SecurityManager implementation into a static context, enabling permission validation even without an object instance.
 
 Purpose and Motivation
 ----------------------
 
-In PHP, **static methods** cannot benefit from **constructor-based dependency injection**, which makes it difficult to access services like a voter (for permission checks) within a static context.
+In PHP, **static methods** cannot benefit from **constructor-based dependency injection**, which makes it difficult to access services like a SecurityManager (for permission checks) within a static context.
 
-This code solves the problem by using a **Service Locator pattern** to store the voter instance at runtime, allowing static methods to retrieve it when needed.
+This code solves the problem by using a **Service Locator pattern** to store the SecurityManager instance at runtime, allowing static methods to retrieve it when needed.
 
 ### Why is this approach necessary?
 
-- **Static method (serviceFunction) needs access to a Voter service**
-  - But static methods don’t support constructor injection.
+- **Static method (serviceFunction) needs access to a SecurityManager service**
+    - But static methods don't support constructor injection.
 - **Decouples** permission logic from the static service logic.
-- **Centralized access control** logic. 
+- **Centralized access control** logic.
 - Allows reusability of permission checks across static utility functions.
 
 
 Component Breakdown
 -------------------
 
-### VoterInterface
+### SecurityManager
 
-An interface that defines a method to check user permissions:
+A service that provides voting-based permission checks:
 
 ```php
-public function vote(string $permission): bool;
+public function vote(
+    string|array $attributes,
+    mixed $subject = null,
+    ?string $strategy = null
+): bool;
 ```
 
-### VoterServiceLocator
+### StaticServiceLocator
 
-A utility that manages the static access to the Voter service. It provides:
+A utility that manages the static access to the SecurityManager service. It provides:
 
-- setVoter(VoterInterface $voter) – Stores the voter instance statically. 
-- getVoter(): VoterInterface – Returns the stored instance.
+- setService(SecurityManager $security) – Stores the SecurityManager instance statically.
+- getService(): SecurityManager – Returns the stored instance.
 
 
 > **Important**: This must be set early during application bootstrapping or service initialization.
@@ -43,14 +47,14 @@ A utility that manages the static access to the Voter service. It provides:
 ### Constructor
 
 ```php
-public function __construct(VoterInterface $voter)
+public function __construct(SecurityManager $security)
 ```
 
-- Accepts a VoterInterface implementation. 
-- Registers the voter via the VoterServiceLocator.
+- Accepts a SecurityManager implementation.
+- Registers the SecurityManager via the StaticServiceLocator.
 
 
-**Usage**: Called once (e.g., during dependency injection container setup) to make the voter available statically.
+**Usage**: Called once (e.g., during dependency injection container setup) to make the SecurityManager available statically.
 
 ### Static Method: serviceFunction()
 
@@ -59,35 +63,64 @@ public static function serviceFunction(): string
 ```
 
 Functionality:
-1. Retrieves the current voter via the service locator. 
-2. Calls vote('my-permission-to-access-action') to check access. 
-3. Returns "Access denied" if the check fails. 
+1. Retrieves the current SecurityManager via the service locator.
+2. Calls vote('my-permission-to-access-action') to check access.
+3. Returns "Access denied" if the check fails.
 4. Returns "Access granted" if permission is granted.
 
 ### Example Usage
 
+### Basic Permission Check
 ```php
-    public function __construct(
-        VoterInterface $voter,
-    )
-    {
-        VoterServiceLocator::setVoter($voter);
+public function __construct(
+    SecurityManager $security,
+)
+{
+    StaticServiceLocatorUtility::setService($security);
+}
+
+public static function serviceFunction(): string
+{
+    $security = StaticServiceLocatorUtility::getService();
+    if ($security->vote('my-permission-to-access-action') === false) {
+        // Access denied
+        return 'Access denied';
     }
 
-    public static function serviceFunction(): string
-    {
-        $voter = VoterServiceLocator::getVoter();
-        if ($voter->vote('my-permission-to-access-action') === false) {
-            // Access denied
-            return 'Access denied';
-        }
+    // Access granted
+    // Continue with the rest of the action logic
 
-        // Access granted
-        // Continue with the rest of the action logic
+    return 'Access granted';
+}
+```
 
-        // Example return (adjust to your real return logic)
-        return 'Access granted';
-    }
+### Permission Check with Subject
+```php
+public static function canOrderProduct(Product $product): bool
+{
+    $security = StaticServiceLocatorUtility::getService();
+    return $security->vote('order', $product);
+}
+```
+
+### Multiple Permissions (OR Logic)
+```php
+public static function canAccessDocument(Document $document): bool
+{
+    $security = StaticServiceLocatorUtility::getService();
+    // Grant access if user can either view OR preview
+    return $security->vote(['view', 'preview'], $document);
+}
+```
+
+### Custom Voting Strategy
+```php
+public static function isAdmin(): bool
+{
+    $security = StaticServiceLocatorUtility::getService();
+    // Use affirmative strategy: grant if user has any of these roles
+    return $security->vote(['ROLE_ADMIN', 'ROLE_SUPERADMIN'], null, 'affirmative');
+}
 ```
 
 Benefits of This Design
@@ -95,18 +128,18 @@ Benefits of This Design
 
 - ✅ **Works in static contexts**
 - ✅ **Centralized permission logic**
-- ✅ **Easily swappable voter implementations**
+- ✅ **Easily swappable SecurityManager implementations**
 - ✅ **Separation of business and security logic**
 
 Limitations and Considerations
 ------------------------------
 
-- ⚠️ **Global state** – The voter is stored statically, which may lead to issues in unit tests or multi-threaded environments.
-- ⚠️ **Testing** – The voter must be carefully mocked and reset between tests.
+- ⚠️ **Global state** – The SecurityManager is stored statically, which may lead to issues in unit tests or multi-threaded environments.
+- ⚠️ **Testing** – The SecurityManager must be carefully mocked and reset between tests.
 
 Conclusion
 ----------
 
-This implementation enables permission checks inside static methods using a VoterServiceLocator. While practical and useful in many scenarios, it introduces a global state, which should be used with caution-especially in large, concurrent, or highly dynamic applications.
+This implementation enables permission checks inside static methods using a StaticServiceLocator. While practical and useful in many scenarios, it introduces a global state, which should be used with caution—especially in large, concurrent, or highly dynamic applications.
 
 It is best suited for controlled environments where access control must be enforced within static utilities or service layers that cannot rely on constructor injection.

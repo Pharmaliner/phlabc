@@ -24,11 +24,11 @@ class YamlService
     public function loadFile(string $fileName): array
     {
         if (file_exists($fileName) === false) {
-            throw new Exception("File does not exist: " . $fileName);
+            throw new Exception('File does not exist: ' . $fileName);
         }
 
         if (filesize($fileName) <= 0) {
-            throw new Exception("File is empty: " . $fileName);
+            throw new Exception('File is empty: ' . $fileName);
         }
 
         $link = realpath($fileName);

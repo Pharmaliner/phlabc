@@ -6,7 +6,7 @@ This extension is installed via Composer and **must be added as a regular depend
 
 Before installing the extension, ensure your system meets the following requirements:
 
-- **PHP 8.3**
+- **PHP 8.4**
 - **PHP extension `yaml`**
 - **TYPO3 v13 LTS**
 
@@ -23,5 +23,14 @@ Before installing the extension, ensure your system meets the following requirem
 
    After installation, execute the following command to apply any required database changes:
     ```bash
-    vendor/bin/typo3 database:updateschema 
+    vendor/bin/typo3 database:updateschema
     ```
+
+3. **Import permissions, roles, and presets** (optional)
+
+   If your extension defines custom permissions, roles, or presets, import them using:
+    ```bash
+    vendor/bin/typo3 abc:import
+    ```
+
+   This step is required if you're using custom YAML configuration files for permissions and roles.

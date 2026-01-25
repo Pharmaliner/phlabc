@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Pharmaline\PhlAbc\Service;
 
 use Pharmaline\PhlAbc\Domain\Model\Permission;
@@ -17,24 +19,31 @@ use TYPO3\CMS\Extbase\Persistence\Exception\UnknownObjectException;
 use TYPO3\CMS\Extbase\Persistence\Generic\Typo3QuerySettings;
 use TYPO3\CMS\Extbase\Persistence\PersistenceManagerInterface;
 
+/**
+ * @phpstan-type PresetDefinition array{
+ *     role: string,
+ *     permissions: array<int, string>
+ * }
+ */
 class PresetService
 {
+    /** @var array<int, string> */
+    private const array REQUIRED_FIELDS = ['role', 'permissions'];
+
+    private const string WILDCARD_ALL = '*';
+
     public function __construct(
         private readonly RoleRepository $roleRepository,
         private readonly LoggerInterface $logger,
         private readonly PermissionRepository $permissionRepository,
         private readonly PersistenceManagerInterface $persistenceManager,
         private readonly Typo3QuerySettings $typo3QuerySettings
-    )
-    {
-        $this->typo3QuerySettings->setRespectStoragePage(false);
-        $this->permissionRepository->setDefaultQuerySettings($this->typo3QuerySettings);
-        $this->roleRepository->setDefaultQuerySettings($this->typo3QuerySettings);
+    ) {
+        $this->configureRepositories();
     }
 
     /**
-     * @TODO cleanup code - code looks a bit messy
-     * @param array $content
+     * @param array<array<PresetDefinition>> $content
      * @return void
      * @throws IllegalObjectTypeException
      * @throws InvalidQueryException
@@ -46,145 +55,360 @@ class PresetService
     public function importIntoDatabase(array $content): void
     {
         foreach ($content as $presetDefinitions) {
-            foreach ($presetDefinitions as $index => $presetDefinition) {
-                if (array_key_exists('role', $presetDefinition) === false) {
-                    throw new MissingKeyAttributeInYamlFileException(
-                        'Missing key: role in preset yaml file for role preset definition: ' . $index
-                    );
-                }
-
-                if (array_key_exists('permissions', $presetDefinition) === false) {
-                    throw new MissingKeyAttributeInYamlFileException(
-                        'Missing key: permissions in preset yaml file for role preset definition: ' . $index
-                    );
-                }
-
-                $role = $this->roleRepository->findOneBy(
-                    [
-                        'role_key' => $presetDefinition['role']
-                    ]
-                );
-
-                if ($role instanceof Role === false) {
-                    throw new RoleNotFoundException('Role not found: ' . $presetDefinition['role']);
-                }
-
-                $this->logger->log(LogLevel::INFO, 'Import preset definition for role: ' . $role->getRoleKey());
-
-                if (in_array('*', $presetDefinition['permissions'])) {
-                    $permissions = $this->permissionRepository->findAll();
-                    foreach ($permissions as $permission) {
-                        $role->addPermission($permission);
-                    }
-
-                    $this->roleRepository->update($role);
-
-                    continue;
-                }
-
-                $permissionDefinitions = $presetDefinition['permissions'];
-                foreach ($permissionDefinitions as $permissionDefinition) {
-                    if (str_contains($permissionDefinition, '*')) {
-                        $permissionPrefix = str_replace('*', '', $permissionDefinition);
-                        $permissions = $this->permissionRepository->findByPermissionPrefix($permissionPrefix);
-
-                        if (empty($permissions) === false) {
-                            foreach($permissions as $permission) {
-                                $role->addPermission($permission);
-                            }
-                        }
-                    } else {
-                        $permission = $this->permissionRepository->findOneBy(['permission_key' => $permissionDefinition]);
-
-                        if($permission instanceof Permission === false) {
-                            throw new PermissionNotFoundException('Permission not found: ' . $permissionDefinition);
-                        }
-
-                        $role->addPermission($permission);
-                    }
-                }
-
-                $this->roleRepository->update($role);
-            }
+            $this->processPresetDefinitions($presetDefinitions, true);
         }
-
-        $this->persistenceManager->persistAll();
     }
 
     /**
-     * @TODO cleanup code - code looks a bit messy
-     * @param array $content
+     * @param array<array<PresetDefinition>> $content
      * @return void
      * @throws MissingKeyAttributeInYamlFileException
      * @throws RoleNotFoundException
      * @throws IllegalObjectTypeException
      * @throws UnknownObjectException
+     * @throws PermissionNotFoundException|InvalidQueryException
      */
     public function removePermissionsFromRoles(array $content): void
     {
         foreach ($content as $presetDefinitions) {
-            foreach ($presetDefinitions as $index => $presetDefinition) {
-                if (array_key_exists('role', $presetDefinition) === false) {
-                    throw new MissingKeyAttributeInYamlFileException(
-                        'Missing key: role in preset yaml file for role preset definition: ' . $index
-                    );
-                }
+            $this->processPresetDefinitions($presetDefinitions, false);
+        }
+    }
 
-                if (array_key_exists('permissions', $presetDefinition) === false) {
-                    throw new MissingKeyAttributeInYamlFileException(
-                        'Missing key: permissions in preset yaml file for role preset definition: ' . $index
-                    );
-                }
+    private function configureRepositories(): void
+    {
+        $this->typo3QuerySettings->setRespectStoragePage(false);
+        $this->permissionRepository->setDefaultQuerySettings($this->typo3QuerySettings);
+        $this->roleRepository->setDefaultQuerySettings($this->typo3QuerySettings);
+    }
 
-                $role = $this->roleRepository->findOneBy(
-                    [
-                        'role_key' => $presetDefinition['role']
-                    ]
+    /**
+     * @param array<PresetDefinition> $presetDefinitions
+     * @param bool $isImport
+     * @return void
+     * @throws IllegalObjectTypeException
+     * @throws InvalidQueryException
+     * @throws MissingKeyAttributeInYamlFileException
+     * @throws PermissionNotFoundException
+     * @throws RoleNotFoundException
+     * @throws UnknownObjectException
+     */
+    private function processPresetDefinitions(array $presetDefinitions, bool $isImport): void
+    {
+        foreach ($presetDefinitions as $index => $presetDefinition) {
+            $this->validatePresetDefinition($presetDefinition, $index);
+
+            if ($isImport) {
+                $this->addPermissionsToRole($presetDefinition);
+            } else {
+                $this->removePermissionsFromRole($presetDefinition);
+            }
+        }
+    }
+
+    /**
+     * @param PresetDefinition $definition
+     * @param int|string $index
+     * @return void
+     * @throws MissingKeyAttributeInYamlFileException
+     */
+    private function validatePresetDefinition(array $definition, int|string $index): void
+    {
+        foreach (self::REQUIRED_FIELDS as $field) {
+            if (!array_key_exists($field, $definition)) {
+                throw new MissingKeyAttributeInYamlFileException(
+                    sprintf(
+                        'Missing key: %s in preset yaml file for role preset definition: %s',
+                        $field,
+                        (string) $index
+                    )
                 );
+            }
+        }
+    }
 
-                if ($role instanceof Role === false) {
-                    throw new RoleNotFoundException('Role not found: ' . $presetDefinition['role']);
-                }
+    /**
+     * @param PresetDefinition $presetDefinition
+     * @return void
+     * @throws IllegalObjectTypeException
+     * @throws InvalidQueryException
+     * @throws PermissionNotFoundException
+     * @throws RoleNotFoundException
+     * @throws UnknownObjectException
+     */
+    private function addPermissionsToRole(array $presetDefinition): void
+    {
+        $role = $this->findRole($presetDefinition['role']);
 
-                $this->logger->log(LogLevel::INFO, 'Remove permissions from the role according to the preset definition: ' . $role->getRoleKey());
+        $this->logger->log(
+            LogLevel::INFO,
+            sprintf('Import preset definition for role: %s', (string) $role->getRoleKey())
+        );
 
-                if (in_array('*', $presetDefinition['permissions'])) {
-                    continue;
-                }
+        if ($this->isWildcardAll($presetDefinition['permissions'])) {
+            $this->addAllPermissionsToRole($role);
+            return;
+        }
 
-                $assignedPermissions = [];
-                $permissions = $role->getPermissions();
+        $this->addSpecificPermissionsToRole($role, $presetDefinition['permissions']);
+    }
 
-                foreach ($permissions as $permission) {
-                    $assignedPermissions[] = $permission->getPermissionKey();
-                }
+    /**
+     * @param PresetDefinition $presetDefinition
+     * @return void
+     * @throws IllegalObjectTypeException
+     * @throws PermissionNotFoundException
+     * @throws RoleNotFoundException
+     * @throws UnknownObjectException
+     */
+    private function removePermissionsFromRole(array $presetDefinition): void
+    {
+        $role = $this->findRole($presetDefinition['role']);
 
-                $inherits = [];
-                foreach($presetDefinition['permissions'] as $permissionKey) {
-                    if (str_contains($permissionKey, '*')) {
-                        $inherits[] = str_replace('*', '', $permissionKey);
-                    }
-                }
+        $this->logger->log(
+            LogLevel::INFO,
+            sprintf('Remove permissions from the role according to the preset definition: %s', (string) $role->getRoleKey())
+        );
 
-                $diff = array_diff($assignedPermissions, $presetDefinition['permissions']);
+        if ($this->isWildcardAll($presetDefinition['permissions'])) {
+            return;
+        }
 
-                foreach($diff as $permission) {
+        $this->removeUnspecifiedPermissions($role, $presetDefinition['permissions']);
+    }
 
-                    if (array_filter($inherits, function($key) use ($permission) {
-                        return str_contains($permission, $key);
-                    })) {
+    /**
+     * @param string $roleKey
+     * @return Role
+     * @throws RoleNotFoundException
+     */
+    private function findRole(string $roleKey): Role
+    {
+        $role = $this->roleRepository->findOneBy(['role_key' => $roleKey]);
 
-                        continue;
-                    }
+        if (!$role instanceof Role) {
+            throw new RoleNotFoundException(sprintf('Role not found: %s', $roleKey));
+        }
 
-                    $permissionObject = $this->permissionRepository->findOneBy(['permission_key' => $permission]);
-                    $role->removePermission($permissionObject);
-                }
+        return $role;
+    }
 
-                $this->roleRepository->update($role);
+    /**
+     * @param array<int, string> $permissions
+     * @return bool
+     */
+    private function isWildcardAll(array $permissions): bool
+    {
+        return in_array(self::WILDCARD_ALL, $permissions, true);
+    }
+
+    /**
+     * @param Role $role
+     * @return void
+     * @throws IllegalObjectTypeException
+     * @throws UnknownObjectException
+     */
+    private function addAllPermissionsToRole(Role $role): void
+    {
+        $permissions = $this->permissionRepository->findAll();
+
+        foreach ($permissions as $permission) {
+            if (!$permission instanceof Permission) {
+                continue;
+            }
+            $role->addPermission($permission);
+        }
+
+        $this->saveRole($role);
+    }
+
+    /**
+     * @param Role $role
+     * @param array<int, string> $permissionDefinitions
+     * @return void
+     * @throws IllegalObjectTypeException
+     * @throws InvalidQueryException
+     * @throws PermissionNotFoundException
+     * @throws UnknownObjectException
+     */
+    private function addSpecificPermissionsToRole(Role $role, array $permissionDefinitions): void
+    {
+        foreach ($permissionDefinitions as $permissionDefinition) {
+            if ($this->isWildcardPattern($permissionDefinition)) {
+                $this->addPermissionsByPrefix($role, $permissionDefinition);
+            } else {
+                $this->addSinglePermission($role, $permissionDefinition);
             }
         }
 
+        $this->saveRole($role);
+    }
+
+    private function isWildcardPattern(string $permissionDefinition): bool
+    {
+        return str_contains($permissionDefinition, self::WILDCARD_ALL);
+    }
+
+    /**
+     * @param Role $role
+     * @param string $permissionPattern
+     * @return void
+     * @throws InvalidQueryException
+     */
+    private function addPermissionsByPrefix(Role $role, string $permissionPattern): void
+    {
+        $permissionPrefix = str_replace(self::WILDCARD_ALL, '', $permissionPattern);
+        $permissions = $this->permissionRepository->findByPermissionPrefix($permissionPrefix);
+
+        foreach ($permissions as $permission) {
+            if (!$permission instanceof Permission) {
+                continue;
+            }
+            $role->addPermission($permission);
+        }
+    }
+
+    /**
+     * @param Role $role
+     * @param string $permissionKey
+     * @return void
+     * @throws PermissionNotFoundException
+     */
+    private function addSinglePermission(Role $role, string $permissionKey): void
+    {
+        $permission = $this->findPermission($permissionKey);
+        $role->addPermission($permission);
+    }
+
+    /**
+     * @param string $permissionKey
+     * @return Permission
+     * @throws PermissionNotFoundException
+     */
+    private function findPermission(string $permissionKey): Permission
+    {
+        $permission = $this->permissionRepository->findOneBy(['permission_key' => $permissionKey]);
+
+        if (!$permission instanceof Permission) {
+            throw new PermissionNotFoundException(sprintf('Permission not found: %s', $permissionKey));
+        }
+
+        return $permission;
+    }
+
+    /**
+     * @param Role $role
+     * @param array<int, string> $allowedPermissions
+     * @return void
+     * @throws IllegalObjectTypeException
+     * @throws PermissionNotFoundException
+     * @throws UnknownObjectException
+     */
+    private function removeUnspecifiedPermissions(Role $role, array $allowedPermissions): void
+    {
+        $assignedPermissionKeys = $this->getAssignedPermissionKeys($role);
+        $wildcardPrefixes = $this->extractWildcardPrefixes($allowedPermissions);
+        $permissionsToRemove = $this->calculatePermissionsToRemove(
+            $assignedPermissionKeys,
+            $allowedPermissions,
+            $wildcardPrefixes
+        );
+
+        foreach ($permissionsToRemove as $permissionKey) {
+            $permission = $this->findPermission($permissionKey);
+            $role->removePermission($permission);
+        }
+
+        if ($permissionsToRemove !== []) {
+            $this->saveRole($role);
+        }
+    }
+
+    /**
+     * @param Role $role
+     * @return array<int, string>
+     */
+    private function getAssignedPermissionKeys(Role $role): array
+    {
+        $assignedPermissionKeys = [];
+        $permissions = $role->getPermissions();
+
+        if ($permissions === null) {
+            return $assignedPermissionKeys;
+        }
+
+        foreach ($permissions as $permission) {
+            if (!$permission instanceof Permission) {
+                continue;
+            }
+            $permissionKey = $permission->getPermissionKey();
+            if ($permissionKey !== null) {
+                $assignedPermissionKeys[] = $permissionKey;
+            }
+        }
+
+        return $assignedPermissionKeys;
+    }
+
+    /**
+     * @param array<int, string> $permissionDefinitions
+     * @return array<int, string>
+     */
+    private function extractWildcardPrefixes(array $permissionDefinitions): array
+    {
+        $prefixes = [];
+
+        foreach ($permissionDefinitions as $permissionKey) {
+            if ($this->isWildcardPattern($permissionKey)) {
+                $prefixes[] = str_replace(self::WILDCARD_ALL, '', $permissionKey);
+            }
+        }
+
+        return $prefixes;
+    }
+
+    /**
+     * @param array<int, string> $assignedPermissionKeys
+     * @param array<int, string> $allowedPermissions
+     * @param array<int, string> $wildcardPrefixes
+     * @return array<int, string>
+     */
+    private function calculatePermissionsToRemove(
+        array $assignedPermissionKeys,
+        array $allowedPermissions,
+        array $wildcardPrefixes
+    ): array {
+        $diff = array_diff($assignedPermissionKeys, $allowedPermissions);
+        $permissionsToRemove = [];
+
+        foreach ($diff as $permissionKey) {
+            if (!$this->matchesAnyWildcardPrefix($permissionKey, $wildcardPrefixes)) {
+                $permissionsToRemove[] = $permissionKey;
+            }
+        }
+
+        return $permissionsToRemove;
+    }
+
+    /**
+     * @param string $permissionKey
+     * @param array<int, string> $wildcardPrefixes
+     * @return bool
+     */
+    private function matchesAnyWildcardPrefix(string $permissionKey, array $wildcardPrefixes): bool
+    {
+        return array_any($wildcardPrefixes, fn($prefix) => str_contains($permissionKey, $prefix));
+    }
+
+    /**
+     * @param Role $role
+     * @return void
+     * @throws IllegalObjectTypeException
+     * @throws UnknownObjectException
+     */
+    private function saveRole(Role $role): void
+    {
+        $this->roleRepository->update($role);
         $this->persistenceManager->persistAll();
     }
 }

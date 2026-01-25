@@ -2,57 +2,73 @@
 
 ## Supported Versions
 
-The following versions of the **PhlAbc** extension are currently supported with security updates:
+We currently support the **latest stable release of this TYPO3 extension** only.
 
-| Version | Status      |
-|---------|-------------|
-| v1.x    | ✅ Supported |
-| < 1.0   | ❌ Unsupported (pre-release) |
+| Version         | Supported |
+| --------------- | --------- |
+| 1.0.x (current) | ✅ Yes     |
+| < 1.0           | ❌ No      |
+
+Please always update to the latest version to receive security fixes.
+
+---
 
 ## Reporting a Vulnerability
 
-If you discover a security vulnerability within this TYPO3 extension, **please do not use public channels or issue trackers** to report it.  
-Instead, contact the maintainers directly and responsibly:
+The security of this open-source TYPO3 extension is important to us.
 
-- **Email (maintainer):** dialog@mceikens.de
-- **Email (vendor):** info@pharmaline.de
-- **GitHub Issues (for non-sensitive bugs):** [https://github.com/Pharmaliner/phlabc/issues](https://github.com/Pharmaliner/phlabc/issues)
+The **only supported reporting channel** for security-related issues is the public **GitHub Issue Board**:
 
-We aim to respond to valid reports within **3–5 business days**.
+* [https://github.com/Pharmaliner/phlabc/issues](https://github.com/Pharmaliner/phlabc/issues)
 
----
+Please create a new issue and describe the problem as clearly as possible.
 
-## Security Model
+> **Important** 
+> 
+> GitHub issues are public. Please **do not include sensitive information** such as exploit code, credentials, or production data. Describe the vulnerability on a conceptual level first.
 
-The **PhlAbc** extension is built around a centralised and strict permission control concept using Symfony's **Voter** pattern. Security is enforced at two levels:
+If possible, include the following information:
 
-### 1. Action-Level Permission Checks
-
-- Every protected controller action must call the `VoterInterface::vote()` method before execution.
-- If permission is denied, the system should throw an exception or redirect the user to a safe location.
-
-### 2. Object-Level Permission Checks
-
-- If a subject (object or array) is passed to the `vote()` method, ownership or permission will be verified using the `cruser_id` attribute.
-- If this attribute is missing or invalid, a `MissingOwnerAttributeInObjectException` is thrown to prevent access bypass.
-
-### 3. Session-Based Permission Caching
-
-- On successful login, all resolved permissions for the current frontend user are stored in their session.
-- This improves performance and reduces redundant database access, but relies on session integrity.
+* Affected version(s)
+* Description of the vulnerability
+* Steps to reproduce
+* Potential impact (e.g. data exposure, privilege escalation)
+* Optional: suggested fix or mitigation
 
 ---
 
-## Recommendations for Developers
+## Response Time
 
-- Always use semantic and specific permission identifiers (e.g. `edit-article`, `view-report`).
-- Avoid relying on controller-level access control alone; use voters consistently.
-- Validate subject objects passed to the `vote()` method to avoid logic flaws.
-- Log and monitor denied access attempts if handling sensitive operations.
+We aim to:
+
+* acknowledge reports within **72 hours**
+* analyze the reported issue as quickly as possible
+* provide a fix and release in a timely manner
+
+Response times may vary depending on complexity and severity.
 
 ---
 
-## Disclaimer
+## Responsible Disclosure
 
-While this extension aims to provide a secure framework for frontend user permissions in TYPO3, ultimate responsibility lies with the integrator or developer using the extension. Ensure you apply best practices in permission assignment and access control integration.
+We kindly ask you to give us reasonable time to investigate and fix reported security issues before sharing details publicly.
 
+After a fix has been released, the vulnerability may be disclosed publicly, optionally with credit to the reporter.
+
+---
+
+## TYPO3 Security Context
+
+This extension follows general TYPO3 security best practices:
+
+* Use of TYPO3 Core APIs
+* Adherence to best practices for Extbase, Fluid, and database access
+* Regular review for known vulnerabilities
+
+More information:
+
+* [https://typo3.org/help/security](https://typo3.org/help/security)
+
+---
+
+Thank you for helping to keep this TYPO3 extension secure.

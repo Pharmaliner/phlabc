@@ -24,11 +24,9 @@ class ImportAbcCommand extends Command
         private readonly PermissionService $permissionService,
         private readonly PresetService $presetService,
         private readonly RoleService $roleService
-    )
-    {
+    ) {
         parent::__construct();
     }
-
 
     /**
      * @param OutputInterface $output
@@ -37,30 +35,48 @@ class ImportAbcCommand extends Command
      */
     public function __invoke(OutputInterface $output): int
     {
-        $output->writeln("<info>Importing roles, permissions and presets...</info>");
+        $output->writeln('<info>Importing roles, permissions and presets...</info>');
 
         $packages = $this->composerService->getYamlFilesOfExtension();
 
+        // Collect all definitions first, then import by type to make sure,
+        // all permissions from all packages are imported before referenced by roles/presets
+        $allPermissions = [];
+        $allRoles = [];
+        $allPresets = [];
+
         foreach ($packages as $package) {
-            foreach($package as $key => $path) {
+            foreach ($package as $key => $path) {
                 $content = $this->yamlService->loadFile($path);
 
                 switch ($key) {
-                    case 'roles':
-                        $this->roleService->importIntoDatabase($content);
-                        break;
                     case 'permissions':
-                        $this->permissionService->importIntoDatabase($content);
+                        $allPermissions[] = $content;
+                        break;
+                    case 'roles':
+                        $allRoles[] = $content;
                         break;
                     case 'presets':
-                        $this->presetService->importIntoDatabase($content);
-                        $this->presetService->removePermissionsFromRoles($content);
+                        $allPresets[] = $content;
                         break;
                 }
             }
         }
 
-        $output->writeln("<info>Finished import of roles, permissions and presets.</info>");
+        foreach ($allPermissions as $content) {
+            $this->permissionService->importIntoDatabase($content);
+        }
+
+        foreach ($allRoles as $content) {
+            $this->roleService->importIntoDatabase($content);
+        }
+
+        foreach ($allPresets as $content) {
+            $this->presetService->importIntoDatabase($content);
+            $this->presetService->removePermissionsFromRoles($content);
+        }
+
+        $output->writeln('<info>Finished import of roles, permissions and presets.</info>');
 
         return Command::SUCCESS;
     }

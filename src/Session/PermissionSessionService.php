@@ -1,98 +1,56 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Pharmaline\PhlAbc\Session;
 
 use Doctrine\DBAL\Exception;
-use Pharmaline\PhlAbc\Domain\Repository\FrontendGroupRepository;
+use Pharmaline\PhlAbc\Domain\Model\FrontendUser;
 use Pharmaline\PhlAbc\Domain\Repository\FrontendUserRepository;
+use Pharmaline\PhlAbc\Utility\PermissionUtility;
 use TYPO3\CMS\Core\Authentication\AbstractUserAuthentication;
+use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Session\Backend\DatabaseSessionBackend;
+use TYPO3\CMS\Core\Session\Backend\Exception\SessionNotCreatedException;
 use TYPO3\CMS\Core\Session\Backend\RedisSessionBackend;
 use TYPO3\CMS\Core\Session\SessionManager;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
+/**
+ * @phpstan-type SessionData array{ses_userid: int, ses_data: string, ses_id?: string}
+ * @phpstan-type UserSessionData array<string, mixed>
+ */
 class PermissionSessionService
 {
-    /**
-     * @var array<string>
-     */
-    private array $permissions = [];
+    private const SESSION_TABLE = 'fe_sessions';
+    private const SESSION_CONTEXT = 'FE';
+    private const PERMISSIONS_KEY = 'permissions';
 
     public function __construct(
-        private readonly FrontendGroupRepository $frontendGroupRepository,
         private readonly FrontendUserRepository $frontendUserRepository,
         private readonly SessionManager $sessionManager,
-    )
-    {
+    ) {
     }
 
     /**
-     * @param array $ids
+     * @param array<int, int> $userIds
      * @return void
      * @throws Exception
+     * @throws SessionNotCreatedException
      */
-    public function refresh(array $ids = []): void
+    public function refresh(array $userIds = []): void
     {
-        $feSessionBackend = $this->sessionManager->getSessionBackend('FE');
+        $sessionBackend = $this->sessionManager->getSessionBackend(self::SESSION_CONTEXT);
 
-        if ($feSessionBackend instanceof DatabaseSessionBackend) {
-            $this->refreshPermissionsForDatabaseBackend($ids);
+        if ($sessionBackend instanceof DatabaseSessionBackend) {
+            $this->refreshPermissionsForDatabaseBackend($userIds);
+            return;
         }
 
-        if ($feSessionBackend instanceof RedisSessionBackend) {
-            // @TODO
-        }
-    }
-
-    /**
-     * @param array $ids
-     * @return void
-     * @throws Exception
-     */
-    private function refreshPermissionsForDatabaseBackend(array $ids = []): void
-    {
-        $sessionTable = 'fe_sessions';
-
-        $connection = GeneralUtility::makeInstance(ConnectionPool::class)->getConnectionForTable($sessionTable);
-        $queryBuild = $connection->createQueryBuilder();
-        $queryBuild->select('*')->from($sessionTable);
-
-        if (empty($ids) === false) {
-            $queryBuild->where('ses_userid IN (:ids)')->setParameter('ids', $ids);
-        }
-
-        $sessions = $queryBuild->executeQuery()->fetchAllAssociative();
-
-        foreach ($sessions as $sessionData) {
-            $user = $this->frontendUserRepository->findByUid($sessionData['ses_userid']);
-
-            if (empty($sessionData['ses_data'])) {
-                continue;
-            }
-
-            // @TODO Frontend Group missing
-
-            $usergroups = $user->getUsergroup()->toArray();
-            if (empty($usergroups) === false) {
-                foreach ($usergroups as $usergroup) {
-                    $this->extractPermissions($usergroup->getRoles()?->toArray());
-                }
-            }
-
-            $this->extractPermissions($user->getRoles()?->toArray());
-
-            $data = unserialize($sessionData['ses_data']);
-
-            unset($data['permissions']);
-            $data['permissions'] = $this->permissions;
-
-            $queryBuilder = $connection->createQueryBuilder();
-            $queryBuilder->update($sessionTable)
-                ->set($sessionTable . '.ses_data', serialize($data))
-                ->where('ses_userid = :id')->setParameter('id', $sessionData['ses_userid'])
-            ;
-            $queryBuilder->executeQuery();
+        if ($sessionBackend instanceof RedisSessionBackend) {
+            $this->refreshPermissionsForRedisBackend($userIds);
+            return;
         }
     }
 
@@ -102,34 +60,237 @@ class PermissionSessionService
      */
     public function setPermissions(AbstractUserAuthentication $sessionUser): void
     {
-        $user = $this->frontendUserRepository->findByUid($sessionUser->getUserId());
+        $userId = $sessionUser->getUserId();
 
-        $frontendUserGroups = $sessionUser->userGroups;
-        foreach ($frontendUserGroups as $frontendUserGroupItem) {
-            $frontendUserGroup = $this->frontendGroupRepository->findByUid($frontendUserGroupItem['uid']);
-
-            if ($frontendUserGroup) {
-                $this->extractPermissions($frontendUserGroup->getRoles()?->toArray());
-            }
+        if ($userId === null) {
+            return;
         }
 
-        $this->extractPermissions($user->getRoles()?->toArray());
-        $sessionUser->setSessionData('permissions', $this->permissions);
+        $finalPermissions = $this->calculateUserPermissions($userId);
+        $sessionUser->setSessionData(self::PERMISSIONS_KEY, $finalPermissions);
     }
 
     /**
-     * @param array $roles
-     * @return void
+     * @param int $frontendUserUid
+     * @return array<int, string>
      */
-    private function extractPermissions(
-        array $roles
-    ): void
+    public function getPermissions(int $frontendUserUid): array
     {
-        foreach ($roles as $role) {
-            $rolePermissions = $role->getPermissions()->toArray();
-            foreach($rolePermissions as $rolePermission) {
-                $this->permissions[] = $rolePermission->getPermissionKey();
+        return $this->calculateUserPermissions($frontendUserUid);
+    }
+
+    /**
+     * @param array<int, int> $userIds
+     * @return void
+     * @throws Exception
+     */
+    private function refreshPermissionsForDatabaseBackend(array $userIds = []): void
+    {
+        $sessions = $this->fetchDatabaseSessions($userIds);
+
+        foreach ($sessions as $sessionData) {
+            $this->updateDatabaseSession($sessionData);
+        }
+    }
+
+    /**
+     * @param array<int, int> $userIds
+     * @return void
+     * @throws SessionNotCreatedException
+     */
+    private function refreshPermissionsForRedisBackend(array $userIds = []): void
+    {
+        $sessionBackend = $this->sessionManager->getSessionBackend(self::SESSION_CONTEXT);
+
+        if (!$sessionBackend instanceof RedisSessionBackend) {
+            return;
+        }
+
+        $sessions = $this->fetchRedisSessions($sessionBackend, $userIds);
+
+        foreach ($sessions as $sessionId => $sessionData) {
+            $this->updateRedisSession($sessionBackend, $sessionId, $sessionData);
+        }
+    }
+
+    /**
+     * @param array<int, int> $userIds
+     * @return array<int, SessionData>
+     * @throws Exception
+     */
+    private function fetchDatabaseSessions(array $userIds): array
+    {
+        $connection = $this->getDatabaseConnection();
+        $queryBuilder = $connection->createQueryBuilder();
+
+        $queryBuilder->select('*')->from(self::SESSION_TABLE);
+
+        if ($userIds !== []) {
+            $queryBuilder
+                ->where('ses_userid IN (:ids)')
+                ->setParameter('ids', $userIds, Connection::PARAM_INT_ARRAY);
+        }
+
+        $result = $queryBuilder->executeQuery()->fetchAllAssociative();
+
+        if (!is_array($result)) {
+            return [];
+        }
+
+        return $result;
+    }
+
+    /**
+     * @param RedisSessionBackend $sessionBackend
+     * @param array<int, int> $userIds
+     * @return array<string, UserSessionData>
+     */
+    private function fetchRedisSessions(RedisSessionBackend $sessionBackend, array $userIds): array
+    {
+        $allSessions = $sessionBackend->getAll();
+
+        if ($userIds === []) {
+            return $allSessions;
+        }
+
+        return $this->filterSessionsByUserIds($allSessions, $userIds);
+    }
+
+    /**
+     * @param array<string, UserSessionData> $sessions
+     * @param array<int, int> $userIds
+     * @return array<string, UserSessionData>
+     */
+    private function filterSessionsByUserIds(array $sessions, array $userIds): array
+    {
+        $filtered = [];
+
+        foreach ($sessions as $sessionId => $sessionData) {
+            if (!is_array($sessionData)) {
+                continue;
+            }
+
+            $userId = $sessionData['ses_userid'] ?? null;
+
+            if ($userId !== null && in_array((int) $userId, $userIds, true)) {
+                $filtered[$sessionId] = $sessionData;
             }
         }
+
+        return $filtered;
+    }
+
+    /**
+     * @param SessionData $sessionData
+     * @return void
+     */
+    private function updateDatabaseSession(array $sessionData): void
+    {
+        $userId = (int) $sessionData['ses_userid'];
+        $serializedData = $sessionData['ses_data'];
+
+        if ($serializedData === '') {
+            return;
+        }
+
+        $updatedData = $this->updateSessionPermissions($serializedData, $userId);
+
+        if ($updatedData === null) {
+            return;
+        }
+
+        $this->saveDatabaseSession($userId, $updatedData);
+    }
+
+    /**
+     * @param RedisSessionBackend $sessionBackend
+     * @param string $sessionId
+     * @param UserSessionData $sessionData
+     * @return void
+     * @throws SessionNotCreatedException
+     */
+    private function updateRedisSession(
+        RedisSessionBackend $sessionBackend,
+        string $sessionId,
+        array $sessionData
+    ): void {
+        if (!isset($sessionData['ses_userid'])) {
+            return;
+        }
+
+        $userId = (int) $sessionData['ses_userid'];
+        $finalPermissions = $this->calculateUserPermissions($userId);
+
+        $sessionData[self::PERMISSIONS_KEY] = $finalPermissions;
+
+        $sessionBackend->set($sessionId, $sessionData);
+    }
+
+    /**
+     * @param string $serializedData
+     * @param int $userId
+     * @return string|null
+     */
+    private function updateSessionPermissions(string $serializedData, int $userId): ?string
+    {
+        $data = unserialize($serializedData);
+
+        if (!is_array($data)) {
+            return null;
+        }
+
+        $finalPermissions = $this->calculateUserPermissions($userId);
+
+        unset($data[self::PERMISSIONS_KEY]);
+        $data[self::PERMISSIONS_KEY] = $finalPermissions;
+
+        return serialize($data);
+    }
+
+    /**
+     * @param int $userId
+     * @param string $serializedData
+     * @return void
+     */
+    private function saveDatabaseSession(int $userId, string $serializedData): void
+    {
+        $connection = $this->getDatabaseConnection();
+        $queryBuilder = $connection->createQueryBuilder();
+
+        $queryBuilder
+            ->update(self::SESSION_TABLE)
+            ->set('ses_data', ':data')
+            ->where('ses_userid = :id')
+            ->setParameter('data', $serializedData)
+            ->setParameter('id', $userId);
+
+        $queryBuilder->executeQuery();
+    }
+
+    /**
+     * @param int $userId
+     * @return array<int, string>
+     */
+    private function calculateUserPermissions(int $userId): array
+    {
+        $user = $this->frontendUserRepository->findByUid($userId);
+
+        if (!$user instanceof FrontendUser) {
+            return [];
+        }
+
+        $permissions = PermissionUtility::extractPermissions($user);
+        $permissionsDeny = PermissionUtility::extractPermissionsDeny($user);
+
+        return array_values(array_diff($permissions, $permissionsDeny));
+    }
+
+    /**
+     * @return Connection
+     */
+    private function getDatabaseConnection(): Connection
+    {
+        return GeneralUtility::makeInstance(ConnectionPool::class)
+            ->getConnectionForTable(self::SESSION_TABLE);
     }
 }

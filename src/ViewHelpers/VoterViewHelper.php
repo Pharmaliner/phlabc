@@ -2,27 +2,25 @@
 
 namespace Pharmaline\PhlAbc\ViewHelpers;
 
-use Pharmaline\PhlAbc\Security\VoterInterface;
-use Pharmaline\PhlAbc\Security\VoterServiceLocator;
+use Pharmaline\PhlAbc\Security\SecurityManager;
+use Pharmaline\PhlAbc\Utility\StaticServiceLocatorUtility;
 use TYPO3Fluid\Fluid\Core\Rendering\RenderingContextInterface;
 use TYPO3Fluid\Fluid\Core\ViewHelper\AbstractConditionViewHelper;
+
 class VoterViewHelper extends AbstractConditionViewHelper
 {
     public function __construct(
-        VoterInterface $voter,
-    )
-    {
-        VoterServiceLocator::setVoter($voter);
+        SecurityManager $securityManager,
+    ) {
+        StaticServiceLocatorUtility::setService($securityManager);
     }
 
-    /**
-     * @return void
-     */
     public function initializeArguments(): void
     {
         parent::initializeArguments();
-        $this->registerArgument('permissionKey', 'string', 'Permission Key', true);
-        $this->registerArgument('subject', 'mixed', 'Subject', false);
+        $this->registerArgument('permissionKey', 'string', 'Voter Class', true);
+        $this->registerArgument('subject', 'mixed', 'Subject to check permission on (e.g., Product, Offer)', false, null);
+        $this->registerArgument('strategy', 'string', 'Voting strategy: unanimous, affirmative', false, 'unanimous', null);
     }
 
     /**
@@ -32,7 +30,12 @@ class VoterViewHelper extends AbstractConditionViewHelper
      */
     public static function verdict(array $arguments, RenderingContextInterface $renderingContext): bool
     {
-        $voter = VoterServiceLocator::getVoter();
-        return $voter->vote($arguments['permissionKey'], $arguments['subject']);
+        $security = StaticServiceLocatorUtility::getService();
+
+        return $security->vote(
+            $arguments['permissionKey'],
+            $arguments['subject'] ?? null,
+            $arguments['strategy'] ?? null
+        );
     }
 }

@@ -8,5 +8,15 @@ services:
     resource: '../src/*'
     exclude: '../src/Domain/Model/*'
 
-  Pharmaline\PhlAbc\Security\VoterInterface:
-    alias: Pharmaline\PhlAbc\Security\Voter
+  Pharmaline\PhlAbc\Utility\ErrorHandlerUtility:
+    public: true
+
+  Pharmaline\PhlAbc\Security\Voter\VoterInterface:
+    public: true
+
+  Pharmaline\PhlAbc\Security\SecurityManager:
+    public: true
+    arguments:
+      $registry: '@Pharmaline\PhlAbc\Security\Service\VoterRegistry'
+      $defaultStrategy: '@Pharmaline\PhlAbc\Security\Strategy\UnanimousStrategy'
+

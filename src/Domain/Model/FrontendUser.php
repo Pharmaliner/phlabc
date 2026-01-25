@@ -18,6 +18,18 @@ class FrontendUser extends AbstractEntity
     public ?ObjectStorage $usergroup = null;
 
     /**
+     * @var ?ObjectStorage<Permission>
+     */
+    public ?ObjectStorage $permissions = null;
+
+    /**
+     * @var ?ObjectStorage<Permission>
+     */
+    public ?ObjectStorage $permissionsDeny = null;
+
+    protected ?FrontendUser $parentFrontendUser = null;
+
+    /**
      * @return ?ObjectStorage<Role>
      */
     public function getRoles(): ?ObjectStorage
@@ -27,7 +39,6 @@ class FrontendUser extends AbstractEntity
 
     /**
      * @param ?ObjectStorage<Role> $roles
-     * @return void
      */
     public function setRoles(?ObjectStorage $roles): void
     {
@@ -36,7 +47,6 @@ class FrontendUser extends AbstractEntity
 
     /**
      * @param Role $role
-     * @return void
      */
     public function addRole(Role $role): void
     {
@@ -45,7 +55,6 @@ class FrontendUser extends AbstractEntity
 
     /**
      * @param Role $role
-     * @return void
      */
     public function removeRole(Role $role): void
     {
@@ -62,10 +71,71 @@ class FrontendUser extends AbstractEntity
 
     /**
      * @param ?ObjectStorage<FrontendGroup> $usergroups
-     * @return void
      */
     public function setUsergroup(?ObjectStorage $usergroups): void
     {
         $this->usergroup = $usergroups;
+    }
+
+    public function getPermissionsDeny(): ?ObjectStorage
+    {
+        return $this->permissionsDeny;
+    }
+
+    public function setPermissionsDeny(?ObjectStorage $permissionsDeny): void
+    {
+        $this->permissionsDeny = $permissionsDeny;
+    }
+
+    /**
+     * @param Permission $permission
+     */
+    public function addPermissionDeny(Permission $permission): void
+    {
+        $this->permissionsDeny?->attach($permission);
+    }
+
+    /**
+     * @param Permission $permission
+     */
+    public function removePermissionDeny(Permission $permission): void
+    {
+        $this->permissionsDeny?->detach($permission);
+    }
+
+    public function getParentFrontendUser(): ?FrontendUser
+    {
+        return $this->parentFrontendUser;
+    }
+
+    public function setParentFrontendUser(?FrontendUser $parentFrontendUser): void
+    {
+        $this->parentFrontendUser = $parentFrontendUser;
+    }
+
+    public function getPermissions(): ?ObjectStorage
+    {
+        return $this->permissions;
+    }
+
+    public function setPermissions(?ObjectStorage $permissions): void
+    {
+        $this->permissions = $permissions;
+    }
+
+    /**
+     * @param Permission $permission
+     */
+    public function addPermission(Permission $permission): void
+    {
+        $this->permissions?->attach($permission);
+    }
+
+    /**
+     * @param Permission $permission
+     */
+    public function removePermission(Permission $permission): void
+    {
+        $this->permissions?->detach($permission);
     }
 }

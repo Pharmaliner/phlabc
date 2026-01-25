@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Pharmaline\PhlAbc\Service;
 
 use Pharmaline\PhlAbc\Domain\Model\Role;
@@ -14,19 +16,30 @@ use TYPO3\CMS\Extbase\Persistence\Exception\UnknownObjectException;
 use TYPO3\CMS\Extbase\Persistence\Generic\Typo3QuerySettings;
 use TYPO3\CMS\Extbase\Persistence\PersistenceManagerInterface;
 
+/**
+ * @phpstan-type RoleDefinition array{
+ *     role_key: string,
+ *     title: string,
+ *     description: string,
+ *     title_translation_key?: string,
+ *     description_translation_key?: string
+ * }
+ */
 class RoleService
 {
+    /** @var array<int, string> */
+    private const array REQUIRED_FIELDS = ['role_key', 'title', 'description'];
+
     public function __construct(
         private readonly RoleRepository $roleRepository,
         private readonly LoggerInterface $logger,
         private readonly PersistenceManagerInterface $persistenceManager,
         private readonly Typo3QuerySettings $typo3QuerySettings,
-    )
-    {
+    ) {
     }
 
     /**
-     * @param array $content
+     * @param array<array<RoleDefinition>> $content
      * @return void
      * @throws IllegalObjectTypeException
      * @throws MissingKeyAttributeInYamlFileException
@@ -35,90 +48,241 @@ class RoleService
      */
     public function importIntoDatabase(array $content): void
     {
-        $this->typo3QuerySettings->setRespectStoragePage(false);
-        $this->roleRepository->setDefaultQuerySettings($this->typo3QuerySettings);
+        $this->configureRepository();
 
         foreach ($content as $roles) {
-            foreach ($roles as $index => $yamlRoleDefinition) {
-                if (array_key_exists('role_key', $yamlRoleDefinition) === false) {
-                    throw new MissingKeyAttributeInYamlFileException(
-                        'Missing key: role_key in role yaml file for role definition: ' . $index
-                    );
-                }
+            $this->processRoleDefinitions($roles);
+        }
+    }
 
-                if (array_key_exists('title', $yamlRoleDefinition) === false) {
-                    throw new MissingKeyAttributeInYamlFileException(
-                        'Missing key: title in role yaml file for role definition: ' . $index
-                    );
-                }
+    /**
+     * @return void
+     */
+    private function configureRepository(): void
+    {
+        $this->typo3QuerySettings->setRespectStoragePage(false);
+        $this->roleRepository->setDefaultQuerySettings($this->typo3QuerySettings);
+    }
 
-                if (array_key_exists('description', $yamlRoleDefinition) === false) {
-                    throw new MissingKeyAttributeInYamlFileException(
-                        'Missing key: description in role yaml file for role definition: ' . $index
-                    );
-                }
+    /**
+     * @param array<RoleDefinition> $roleDefinitions
+     * @return void
+     * @throws IllegalObjectTypeException
+     * @throws MissingKeyAttributeInYamlFileException
+     * @throws MissingRoleKeyDefinitionInObjectException
+     * @throws UnknownObjectException
+     */
+    private function processRoleDefinitions(array $roleDefinitions): void
+    {
+        foreach ($roleDefinitions as $index => $yamlRoleDefinition) {
+            $this->validateRoleDefinition($yamlRoleDefinition, $index);
+            $this->importRole($yamlRoleDefinition);
+        }
+    }
 
-                $role = $this->roleRepository->findOneBy(
-                    [
-                        'role_key' => $yamlRoleDefinition['role_key'],
-                        'is_custom_role' => false
-                    ]
+    /**
+     * @param RoleDefinition $definition
+     * @param int|string $index
+     * @return void
+     * @throws MissingKeyAttributeInYamlFileException
+     */
+    private function validateRoleDefinition(array $definition, int|string $index): void
+    {
+        foreach (self::REQUIRED_FIELDS as $field) {
+            if (!array_key_exists($field, $definition)) {
+                throw new MissingKeyAttributeInYamlFileException(
+                    sprintf(
+                        'Missing key: %s in role yaml file for role definition: %s',
+                        $field,
+                        (string) $index
+                    )
                 );
+            }
+        }
+    }
 
-                if ($role instanceof Role) {
-                    $oldRoleLogContext = [
-                        'title' => $role->getTitle(),
-                        'description' => $role->getDescription(),
-                        'role_key' => $role->getRoleKey(),
-                    ];
+    /**
+     * @param RoleDefinition $yamlDefinition
+     * @return void
+     * @throws IllegalObjectTypeException
+     * @throws MissingRoleKeyDefinitionInObjectException
+     * @throws UnknownObjectException
+     */
+    private function importRole(array $yamlDefinition): void
+    {
+        $role = $this->findOrCreateRole($yamlDefinition['role_key']);
+        $isNew = $role->getUid() === null;
 
-                    $role->setDescription($yamlRoleDefinition['description']);
-                    $role->setTitle($yamlRoleDefinition['title']);
+        $oldState = null;
+        if (!$isNew) {
+            $oldState = $this->captureRoleState($role);
+        }
 
-                    if (empty($role->getRoleKey())) {
-                        throw new MissingRoleKeyDefinitionInObjectException(
-                            'Missing role key in object. Please check your definitions.'
-                        );
-                    }
+        $this->updateRoleFromYaml($role, $yamlDefinition);
+        $this->validateRole($role);
+        $this->saveRole($role, $isNew);
 
-                    $this->roleRepository->update($role);
+        if ($isNew) {
+            $this->logNewRole($role);
+        } else {
+            assert($oldState !== null);
+            $this->logUpdatedRole($role, $oldState);
+        }
+    }
 
-                    $newRoleLogContext = [
-                        'title' => $role->getTitle(),
-                        'description' => $role->getDescription(),
-                        'role_key' => $role->getRoleKey(),
-                    ];
+    /**
+     * @param string $roleKey
+     * @return Role
+     */
+    private function findOrCreateRole(string $roleKey): Role
+    {
+        $role = $this->findCustomRoleByKey($roleKey);
 
-                    $this->logger->log(LogLevel::INFO, sprintf('Update role %s', $role->getRoleKey()),
-                        [
-                            'old_role' => $oldRoleLogContext,
-                            'new_role' => $newRoleLogContext,
-                        ]
-                    );
+        if ($role instanceof Role) {
+            return $role;
+        }
 
-                } else {
-                    $role = new Role();
+        return $this->createNewRole($roleKey);
+    }
 
-                    $role->setRoleKey($yamlRoleDefinition['role_key']);
-                    $role->setTitle($yamlRoleDefinition['title']);
-                    $role->setDescription($yamlRoleDefinition['description']);
-                    $role->setIsCustomRole(false);
-                    $role->setPid(StorageConfigurationUtility::getRoleStoragePid());
+    /**
+     * @param string $roleKey
+     * @return Role|null
+     */
+    private function findCustomRoleByKey(string $roleKey): ?Role
+    {
+        $roles = $this->roleRepository->findBy(['role_key' => $roleKey]);
 
-                    $this->roleRepository->add($role);
-                    $this->logger->log(LogLevel::INFO, sprintf('Add new role %s', $role->getRoleKey()),
-                        [
-                            'role' => [
-                                'title' => $role->getTitle(),
-                                'description' => $role->getDescription(),
-                                'role_key' => $role->getRoleKey(),
-                            ],
-                        ]
-                    );
-                }
+        if (!is_iterable($roles)) {
+            return null;
+        }
+
+        foreach ($roles as $role) {
+            if (!$role instanceof Role) {
+                continue;
+            }
+            if ($role->getCustomRole() !== null) {
+                return $role;
             }
         }
 
+        return null;
+    }
+
+    /**
+     * @param string $roleKey
+     * @return Role
+     */
+    private function createNewRole(string $roleKey): Role
+    {
+        $role = new Role();
+        $role->setRoleKey($roleKey);
+        $role->setCustomRole(null);
+        $role->setPid(StorageConfigurationUtility::getRoleStoragePid());
+
+        return $role;
+    }
+
+    /**
+     * @param Role $role
+     * @param RoleDefinition $yamlDefinition
+     * @return void
+     */
+    private function updateRoleFromYaml(Role $role, array $yamlDefinition): void
+    {
+        $role->setTitle($yamlDefinition['title']);
+        $role->setDescription($yamlDefinition['description']);
+
+        if (isset($yamlDefinition['title_translation_key'])) {
+            $role->setTitleTranslationKey($yamlDefinition['title_translation_key']);
+        }
+
+        if (isset($yamlDefinition['description_translation_key'])) {
+            $role->setDescriptionTranslationKey($yamlDefinition['description_translation_key']);
+        }
+    }
+
+    /**
+     * @param Role $role
+     * @return void
+     * @throws MissingRoleKeyDefinitionInObjectException
+     */
+    private function validateRole(Role $role): void
+    {
+        $roleKey = $role->getRoleKey();
+        if (empty($roleKey)) {
+            throw new MissingRoleKeyDefinitionInObjectException(
+                'Missing role key in object. Please check your definitions.'
+            );
+        }
+    }
+
+    /**
+     * @param Role $role
+     * @param bool $isNew
+     * @return void
+     * @throws IllegalObjectTypeException
+     * @throws UnknownObjectException
+     */
+    private function saveRole(Role $role, bool $isNew): void
+    {
+        if ($isNew) {
+            $this->roleRepository->add($role);
+        } else {
+            $this->roleRepository->update($role);
+        }
+
         $this->persistenceManager->persistAll();
+    }
+
+    /**
+     * @param Role $role
+     * @return array<string, string|null>
+     */
+    private function captureRoleState(Role $role): array
+    {
+        return [
+            'title' => $role->getTitle(),
+            'description' => $role->getDescription(),
+            'role_key' => $role->getRoleKey(),
+            'title_translation_key' => $role->getTitleTranslationKey(),
+            'description_translation_key' => $role->getDescriptionTranslationKey(),
+        ];
+    }
+
+    /**
+     * @param Role $role
+     * @return void
+     */
+    private function logNewRole(Role $role): void
+    {
+        $this->logger->log(
+            LogLevel::INFO,
+            sprintf('Add new role %s', (string) $role->getRoleKey()),
+            [
+                'role' => [
+                    'title' => $role->getTitle(),
+                    'description' => $role->getDescription(),
+                    'role_key' => $role->getRoleKey(),
+                ],
+            ]
+        );
+    }
+
+    /**
+     * @param Role $role
+     * @param array<string, string|null> $oldState
+     * @return void
+     */
+    private function logUpdatedRole(Role $role, array $oldState): void
+    {
+        $this->logger->log(
+            LogLevel::INFO,
+            sprintf('Update role %s', (string) $role->getRoleKey()),
+            [
+                'old_role' => $oldState,
+                'new_role' => $this->captureRoleState($role),
+            ]
+        );
     }
 }
