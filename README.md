@@ -1,3 +1,4 @@
+![Logo of extension phlabc](documentation/assets/logo.png)
 # PhlAbc
 
 ## Table of contents
