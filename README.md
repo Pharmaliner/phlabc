@@ -1,5 +1,15 @@
 ![Logo of extension phlabc](documentation/assets/logo.png)
-# PhlAbc
+# phlabc
+
+## Foreword 📖
+In modern web applications, fine-grained control of user permissions plays a crucial role—especially when it comes to access to sensitive content and features in the frontend. The TYPO3 extension **phlabc** was developed with exactly this goal in mind: to provide flexible, centralised, and fine-grained management of permissions for frontend users.
+
+Based on the well-established Symfony Voter concept, this extension offers an elegant and powerful architecture that allows access rights to be controlled not only at the action level but also for individual objects. This opens up a wide range of possibilities for developers and administrators to create a secure yet user-friendly experience.
+
+phlabc integrates seamlessly with TYPO3 and leverages established mechanisms such as user and group management, as well as role models. The extension places particular emphasis on extensibility and ease of use, enabling it to support both standard applications and complex scenarios.
+
+We hope this extension helps you equip your TYPO3 projects with robust and flexible frontend permission control and wish you every success in meeting your individual requirements.
+
 
 ## Table of contents
 
@@ -65,16 +75,6 @@
         - [Usage Instructions](./documentation/usage/ViewHelper.md#usage-instructions)
         - [Example Usage](./documentation/usage/ViewHelper.md#example-usage)
 - [Contact](#contact)
-
-
-## Foreword 📖
-In modern web applications, fine-grained control of user permissions plays a crucial role—especially when it comes to access to sensitive content and features in the frontend. The TYPO3 extension **PhlAbc** was developed with exactly this goal in mind: to provide flexible, centralised, and fine-grained management of permissions for frontend users.
-
-Based on the well-established Symfony Voter concept, this extension offers an elegant and powerful architecture that allows access rights to be controlled not only at the action level but also for individual objects. This opens up a wide range of possibilities for developers and administrators to create a secure yet user-friendly experience.
-
-PhlAbc integrates seamlessly with TYPO3 and leverages established mechanisms such as user and group management, as well as role models. The extension places particular emphasis on extensibility and ease of use, enabling it to support both standard applications and complex scenarios.
-
-We hope this extension helps you equip your TYPO3 projects with robust and flexible frontend permission control and wish you every success in meeting your individual requirements.
 
 ## Contact
 If you have any questions, problems or suggestions for improving the extension, please feel free to contact us:
