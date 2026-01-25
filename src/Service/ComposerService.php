@@ -7,12 +7,12 @@ namespace Pharmaline\PhlAbc\Service;
 use Composer\InstalledVersions;
 
 /**
- * @phpstan-type ComposerJson array{extra?: array{phl-abc?: array{roles?: string, permissions?: string, presets?: string}}}
+ * @phpstan-type ComposerJson array{extra?: array{string?: array{roles?: string, permissions?: string, presets?: string}}}
  * @phpstan-type YamlPaths array{roles?: string, permissions?: string, presets?: string}
  */
 class ComposerService
 {
-    private const PHARMALINE_ABC_KEY = 'phl-abc';
+    private const PHARMALINE_ABC_KEY = 'pharmaline/abc';
     private const COMPOSER_JSON_FILE = 'composer.json';
 
     /** @var array<int, string> */
@@ -65,7 +65,6 @@ class ComposerService
     private function readComposerJson(string $installPath): ?array
     {
         $composerJsonPath = $installPath . DIRECTORY_SEPARATOR . self::COMPOSER_JSON_FILE;
-
         if (!file_exists($composerJsonPath)) {
             return null;
         }
