@@ -22,7 +22,14 @@ class PermissionVoter implements VoterInterface
      */
     public function supports(string $attribute, mixed $subject): bool
     {
-        return !empty($attribute);
+        try {
+            if (!empty($this->context->getPropertyFromAspect('frontend.user', 'isLoggedIn')) && !empty($attribute)) {
+                return true;
+            }
+        } catch (AspectNotFoundException $e) {
+        }
+
+        return false;
     }
 
     /**

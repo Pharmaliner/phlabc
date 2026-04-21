@@ -7,8 +7,6 @@ use Pharmaline\PhlAbc\Security\Strategy\AccessDecisionStrategyFactory;
 use Pharmaline\PhlAbc\Security\Strategy\AccessDecisionStrategyInterface;
 use Pharmaline\PhlAbc\Security\Voter\VoterInterface;
 use Psr\Log\LoggerInterface;
-use TYPO3\CMS\Core\Context\Context;
-use TYPO3\CMS\Core\Context\Exception\AspectNotFoundException;
 
 class SecurityManager
 {
@@ -17,14 +15,12 @@ class SecurityManager
 
     /**
      * @param VoterRegistry $registry
-     * @param Context $context
      * @param LoggerInterface $logger
      * @param AccessDecisionStrategyFactory $strategyFactory
      * @param AccessDecisionStrategyInterface $defaultStrategy
      */
     public function __construct(
         VoterRegistry $registry,
-        private readonly Context $context,
         private readonly LoggerInterface $logger,
         private readonly AccessDecisionStrategyFactory $strategyFactory,
         private readonly AccessDecisionStrategyInterface $defaultStrategy
@@ -39,24 +35,11 @@ class SecurityManager
      * @param mixed $subject
      * @param string|null $strategy
      * @return bool
-     * @throws AspectNotFoundException
      */
     public function vote(string|array $attributes, mixed $subject = null, ?string $strategy = null): bool
     {
-        if ($this->context->getPropertyFromAspect('frontend.user', 'isLoggedIn') === false) {
-            $this->logger->warning('Invalid login. User is not logged in. 1733910000');
-            return false;
-        }
-
         $attributes = (array)$attributes;
-
-        foreach ($attributes as $attribute) {
-            if ($this->voteOnSingleAttribute($attribute, $subject, $strategy)) {
-                return true;
-            }
-        }
-
-        return false;
+        return array_any($attributes, fn($attribute) => $this->voteOnSingleAttribute($attribute, $subject, $strategy));
     }
 
     private function voteOnSingleAttribute(
