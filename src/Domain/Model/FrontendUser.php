@@ -2,6 +2,7 @@
 
 namespace Pharmaline\PhlAbc\Domain\Model;
 
+use TYPO3\CMS\Extbase\Attribute\ORM\Lazy;
 use TYPO3\CMS\Extbase\DomainObject\AbstractEntity;
 use TYPO3\CMS\Extbase\Persistence\ObjectStorage;
 
@@ -10,23 +11,31 @@ class FrontendUser extends AbstractEntity
     /**
      * @var ?ObjectStorage<Role>
      */
+    #[Lazy()]
     public ?ObjectStorage $roles = null;
 
     /**
      * @var ?ObjectStorage<FrontendGroup>
      */
+    #[Lazy()]
     public ?ObjectStorage $usergroup = null;
 
     /**
      * @var ?ObjectStorage<Permission>
      */
+    #[Lazy()]
     public ?ObjectStorage $permissions = null;
 
     /**
      * @var ?ObjectStorage<Permission>
      */
+    #[Lazy()]
     public ?ObjectStorage $permissionsDeny = null;
 
+    /**
+     * @var FrontendUser|null
+     */
+    #[Lazy()]
     protected ?FrontendUser $parentFrontendUser = null;
 
     /**
