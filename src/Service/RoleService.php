@@ -136,7 +136,7 @@ class RoleService
      */
     private function findOrCreateRole(string $roleKey): Role
     {
-        $role = $this->findCustomRoleByKey($roleKey);
+        $role = $this->findRoleByKey($roleKey);
 
         if ($role instanceof Role) {
             return $role;
@@ -149,21 +149,12 @@ class RoleService
      * @param string $roleKey
      * @return Role|null
      */
-    private function findCustomRoleByKey(string $roleKey): ?Role
+    private function findRoleByKey(string $roleKey): ?Role
     {
         $roles = $this->roleRepository->findBy(['role_key' => $roleKey]);
 
-        if (!is_iterable($roles)) {
-            return null;
-        }
-
-        foreach ($roles as $role) {
-            if (!$role instanceof Role) {
-                continue;
-            }
-            if ($role->getCustomRole() !== null) {
-                return $role;
-            }
+        if (is_iterable($roles)) {
+            return $roles[0];
         }
 
         return null;
