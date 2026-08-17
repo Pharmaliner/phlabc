@@ -4,6 +4,10 @@ services:
     autoconfigure: true
     public: false
 
+  _instanceof:
+    Pharmaline\PhlAbc\Export\Formatter\PermissionMatrixFormatterInterface:
+      tags: [ 'app.permission_matrix_formatter' ]
+
   Pharmaline\PhlAbc\:
     resource: '../src/*'
     exclude: '../src/Domain/Model/*'
@@ -20,3 +24,6 @@ services:
       $registry: '@Pharmaline\PhlAbc\Security\Service\VoterRegistry'
       $defaultStrategy: '@Pharmaline\PhlAbc\Security\Strategy\UnanimousStrategy'
 
+  Pharmaline\PhlAbc\Export\Formatter\PermissionMatrixFormatterRegistry:
+    arguments:
+      $formatters: !tagged_iterator app.permission_matrix_formatter
