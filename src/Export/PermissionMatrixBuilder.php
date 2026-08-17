@@ -4,6 +4,7 @@ namespace Pharmaline\PhlAbc\Export;
 
 use Pharmaline\PhlAbc\Service\ComposerService;
 use Pharmaline\PhlAbc\Service\YamlService;
+use RuntimeException;
 
 final class PermissionMatrixBuilder
 {
@@ -29,7 +30,6 @@ final class PermissionMatrixBuilder
             }
             $rows[] = ['key' => $key, 'title' => $title, 'roles' => $roles];
         }
-
         return new PermissionMatrix($roleKeys, $rows);
     }
 
@@ -47,7 +47,6 @@ final class PermissionMatrixBuilder
                 }
             }
         }
-
         return $defs;
     }
 
@@ -63,7 +62,25 @@ final class PermissionMatrixBuilder
         $permissions = [];
         foreach ($defs as $content) {
             foreach ($content['permissions'] ?? [] as $permission) {
-                $permissions[$permission['permission_key']] = $permission['title'] ?? '';
+                if (!isset($permission['permission_key']) || $permission['permission_key'] === '') {
+                    throw new RuntimeException(
+                        sprintf(
+                            'Permission definition is missing required field "permission_key": %s',
+                            json_encode($permission, JSON_UNESCAPED_SLASHES),
+                        )
+                    );
+                }
+
+                if (!isset($permission['title']) || $permission['title'] === '') {
+                    throw new RuntimeException(
+                        sprintf(
+                            'Permission "%s" is missing required field "title".',
+                            $permission['permission_key'],
+                        )
+                    );
+                }
+
+                $permissions[$permission['permission_key']] = $permission['title'];
             }
         }
         ksort($permissions);
@@ -82,13 +99,21 @@ final class PermissionMatrixBuilder
         $roleKeys = [];
         foreach ($defs as $content) {
             foreach ($content['roles'] ?? [] as $role) {
+                if (!isset($role['role_key']) || $role['role_key'] === '') {
+                    throw new RuntimeException(
+                        sprintf(
+                            'Role definition is missing required field "role_key": %s',
+                            json_encode($role, JSON_UNESCAPED_SLASHES),
+                        )
+                    );
+                }
+
                 $roleKey = $role['role_key'];
                 if (!in_array($roleKey, $roleKeys, true)) {
                     $roleKeys[] = $roleKey;
                 }
             }
         }
-
         return $roleKeys;
     }
 
@@ -105,6 +130,15 @@ final class PermissionMatrixBuilder
         $rolePermissions = [];
         foreach ($defs as $content) {
             foreach ($content['presets'] ?? [] as $preset) {
+                if (!isset($preset['role']) || $preset['role'] === '') {
+                    throw new RuntimeException(
+                        sprintf(
+                            'Preset definition is missing required field "role": %s',
+                            json_encode($preset, JSON_UNESCAPED_SLASHES),
+                        )
+                    );
+                }
+
                 $role = $preset['role'];
                 $patterns = $preset['permissions'] ?? [];
 
@@ -114,7 +148,6 @@ final class PermissionMatrixBuilder
                 ]));
             }
         }
-
         return $rolePermissions;
     }
 

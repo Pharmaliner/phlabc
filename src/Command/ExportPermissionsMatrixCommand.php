@@ -84,6 +84,6 @@ class ExportPermissionsMatrixCommand extends Command
         }
         $dir = dirname($path);
         $base = basename($path, '.' . $currentExt);
-        return $dir . '/' . $base . '.' . $extension;
+        return $dir . DIRECTORY_SEPARATOR . $base . '.' . $extension;
     }
 }
