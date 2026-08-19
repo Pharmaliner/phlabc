@@ -74,6 +74,17 @@ We hope this extension helps you equip your TYPO3 projects with robust and flexi
         - [Purpose](./documentation/usage/ViewHelper.md#purpose)
         - [Usage Instructions](./documentation/usage/ViewHelper.md#usage-instructions)
         - [Example Usage](./documentation/usage/ViewHelper.md#example-usage)
+      - [Exporting the Role-Permission Matrix](./documentation/usage/Export.md#exporting-the-role-permission-matrix)
+          - [Overview](./documentation/usage/Export.md#overview)
+          - [1. Command](./documentation/usage/Export.md#1-command)
+          - [2. Options](./documentation/usage/Export.md#2-options)
+          - [3. Output Formats](./documentation/usage/Export.md#3-output-formats)
+              - [3.1 Markdown (md)](./documentation/usage/Export.md#31-markdown-md)
+              - [3.2 CSV (csv)](./documentation/usage/Export.md#32-csv-csv)
+          - [4. Matrix Structure](./documentation/usage/Export.md#4-matrix-structure)
+          - [5. Typical Use Cases](./documentation/usage/Export.md#5-typical-use-cases)
+          - [6. Summary](./documentation/usage/Export.md#6-summary)
+    -
 - [Contact](#contact)
 
 ## Contact
