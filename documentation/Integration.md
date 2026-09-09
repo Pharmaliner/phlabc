@@ -118,6 +118,8 @@ php vendor/bin/typo3 abc:import
 
 This command reads the YAML files specified in `composer.json` and synchronizes the defined roles, permissions, and presets with the system. The import should be run after changes to any of the YAML files to update the system's configuration accordingly.
 
+Note: This process explicitly removes outdated category relations for permissions.
+
 ---
 
 ## 7. Voting Strategies Configuration

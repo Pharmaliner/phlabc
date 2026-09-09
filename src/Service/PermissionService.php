@@ -212,6 +212,10 @@ class PermissionService
             return;
         }
 
+        // Clear existing categories to prevent stale relations
+        $permission->removeAllCategories();
+
+        // Add the new category
         $permission->addCategory($category);
     }
 

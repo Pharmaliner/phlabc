@@ -34,3 +34,5 @@ Before installing the extension, ensure your system meets the following requirem
     ```
 
    This step is required if you're using custom YAML configuration files for permissions and roles.
+
+   It also removes stale category relations for permissions to ensure data consistency.
