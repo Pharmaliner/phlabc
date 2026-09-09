@@ -128,6 +128,16 @@ class Permission extends AbstractEntity
         }
     }
 
+    public function removeAllCategories(): void
+    {
+        if ($this->categories === null) {
+            return;
+        }
+        foreach (iterator_to_array($this->categories) as $category) {
+            $this->categories->detach($category);
+        }
+    }
+
     public function getRoles(): ?ObjectStorage
     {
         return $this->roles;
