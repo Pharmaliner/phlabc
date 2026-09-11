@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Pharmaline\PhlAbc\Service;
 
+use Pharmaline\PhlAbc\Domain\Dto\OperationResult;
 use Pharmaline\PhlAbc\Domain\Model\Permission;
 use Pharmaline\PhlAbc\Domain\Repository\PermissionRepository;
 use Pharmaline\PhlAbc\Exception\MissingKeyAttributeInYamlFileException;
@@ -11,11 +12,11 @@ use Pharmaline\PhlAbc\Exception\MissingRoleKeyDefinitionInObjectException;
 use Pharmaline\PhlAbc\Utility\StorageConfigurationUtility;
 use Psr\Log\LoggerInterface;
 use Psr\Log\LogLevel;
+use TYPO3\CMS\Extbase\Domain\Model\Category;
 use TYPO3\CMS\Extbase\Persistence\Exception\IllegalObjectTypeException;
 use TYPO3\CMS\Extbase\Persistence\Exception\UnknownObjectException;
 use TYPO3\CMS\Extbase\Persistence\Generic\Typo3QuerySettings;
 use TYPO3\CMS\Extbase\Persistence\PersistenceManagerInterface;
-use TYPO3\CMS\Extbase\Domain\Model\Category;
 
 /**
  * @phpstan-type PermissionDefinition array{
@@ -42,7 +43,6 @@ class PermissionService
 
     /**
      * @param array<array<PermissionDefinition>> $content
-     * @return void
      * @throws MissingKeyAttributeInYamlFileException
      * @throws MissingRoleKeyDefinitionInObjectException
      * @throws IllegalObjectTypeException
@@ -58,8 +58,52 @@ class PermissionService
     }
 
     /**
-     * @return void
+     * Identifies and removes obsolete permissions from the database.
+     *
+     * Any permission in the database not present in $validPermissionKeys is considered obsolete.
+     *
+     * - If $dryRun is true: Returns the list of obsolete permissions without modifying the database.
+     * - If $dryRun is false: Soft-deletes the obsolete permissions and persists the changes.
+     *
+     * @param array<int, string> $validPermissionKeys List of valid permission keys defined in YAML config file(s).
+     * @param bool $dryRun If true, only reports what would be deleted without executing.
+     *
+     * @return OperationResult Contains the list of removed/removed-to-be permission keys.
      */
+    public function cleanupObsoletePermissions(array $validPermissionKeys, bool $dryRun = true): OperationResult
+    {
+        $this->configureRepository();
+
+        $result = new OperationResult();
+
+        // Find all non-deleted permissions in DB
+        $allPermissions = $this->permissionRepository->findAll();
+
+        // Soft-delete permissions not in $validPermissionKeys
+        foreach ($allPermissions as $permission) {
+            if (!in_array($permission->getPermissionKey(), $validPermissionKeys, true)) {
+                $this->logger->log(
+                    LogLevel::INFO,
+                    sprintf('Remove obsolete permission %s', $permission->getPermissionKey()),
+                    ['permission' => $this->capturePermissionState($permission)]
+                );
+
+                $result->recordRemoved($permission->getPermissionKey());
+
+                if (!$dryRun) {
+                    $this->permissionRepository->remove($permission);
+                    $this->logRemovedPermission($permission);
+                }
+            }
+        }
+
+        if (!$dryRun) {
+            $this->persistenceManager->persistAll();
+        }
+
+        return $result;
+    }
+
     private function configureRepository(): void
     {
         $this->typo3QuerySettings->setRespectStoragePage(false);
@@ -68,7 +112,6 @@ class PermissionService
 
     /**
      * @param array<PermissionDefinition> $permissionDefinitions
-     * @return void
      * @throws MissingKeyAttributeInYamlFileException
      * @throws MissingRoleKeyDefinitionInObjectException
      * @throws IllegalObjectTypeException
@@ -85,7 +128,6 @@ class PermissionService
     /**
      * @param PermissionDefinition $definition
      * @param int|string $index
-     * @return void
      * @throws MissingKeyAttributeInYamlFileException
      */
     private function validatePermissionDefinition(array $definition, int|string $index): void
@@ -96,7 +138,7 @@ class PermissionService
                     sprintf(
                         'Missing key: %s in permission yaml file for permission definition: %s',
                         $field,
-                        (string) $index
+                        (string)$index
                     )
                 );
             }
@@ -105,7 +147,6 @@ class PermissionService
 
     /**
      * @param PermissionDefinition $yamlDefinition
-     * @return void
      * @throws IllegalObjectTypeException
      * @throws MissingRoleKeyDefinitionInObjectException
      * @throws UnknownObjectException
@@ -154,7 +195,6 @@ class PermissionService
     /**
      * @param Permission $permission
      * @param PermissionDefinition $yamlDefinition
-     * @return void
      */
     private function updatePermissionFromYaml(Permission $permission, array $yamlDefinition): void
     {
@@ -175,7 +215,6 @@ class PermissionService
     /**
      * @param Permission $permission
      * @param PermissionDefinition $yamlDefinition
-     * @return void
      */
     private function updateCategoryFromYaml(Permission $permission, array $yamlDefinition): void
     {
@@ -189,7 +228,7 @@ class PermissionService
             $this->logger->warning(
                 sprintf(
                     'Invalid category UID for permission %s: %d',
-                    (string) $permission->getPermissionKey(),
+                    (string)$permission->getPermissionKey(),
                     $categoryUid
                 )
             );
@@ -206,7 +245,7 @@ class PermissionService
                 sprintf(
                     'Category with UID %d not found for permission %s',
                     $categoryUid,
-                    (string) $permission->getPermissionKey()
+                    (string)$permission->getPermissionKey()
                 )
             );
             return;
@@ -221,7 +260,6 @@ class PermissionService
 
     /**
      * @param Permission $permission
-     * @return void
      * @throws MissingRoleKeyDefinitionInObjectException
      */
     private function validatePermission(Permission $permission): void
@@ -237,7 +275,6 @@ class PermissionService
     /**
      * @param Permission $permission
      * @param bool $isNew
-     * @return void
      * @throws IllegalObjectTypeException
      * @throws UnknownObjectException
      */
@@ -267,13 +304,12 @@ class PermissionService
 
     /**
      * @param Permission $permission
-     * @return void
      */
     private function logNewPermission(Permission $permission): void
     {
         $this->logger->log(
             LogLevel::INFO,
-            sprintf('Add new permission %s', (string) $permission->getPermissionKey()),
+            sprintf('Add new permission %s', (string)$permission->getPermissionKey()),
             ['permission' => $this->capturePermissionState($permission)]
         );
     }
@@ -281,17 +317,28 @@ class PermissionService
     /**
      * @param Permission $permission
      * @param array<string, string|null> $oldState
-     * @return void
      */
     private function logUpdatedPermission(Permission $permission, array $oldState): void
     {
         $this->logger->log(
             LogLevel::INFO,
-            sprintf('Update permission %s', (string) $permission->getPermissionKey()),
+            sprintf('Update permission %s', (string)$permission->getPermissionKey()),
             [
                 'old_permission' => $oldState,
                 'new_permission' => $this->capturePermissionState($permission),
             ]
+        );
+    }
+
+    /**
+     * @param Permission $permission
+     */
+    private function logRemovedPermission(Permission $permission): void
+    {
+        $this->logger->log(
+            LogLevel::INFO,
+            sprintf('Remove permission %s', (string)$permission->getPermissionKey()),
+            ['permission' => $this->capturePermissionState($permission)]
         );
     }
 }

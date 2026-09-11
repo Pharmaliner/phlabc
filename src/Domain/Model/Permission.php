@@ -10,8 +10,8 @@ use TYPO3\CMS\Extbase\Persistence\ObjectStorage;
 class Permission extends AbstractEntity
 {
     protected string $permissionKey;
-    protected string $title;
-    protected string $description;
+    protected string $title = '';
+    protected string $description = '';
     protected ?string $titleTranslationKey = '';
     protected ?string $descriptionTranslationKey = '';
 

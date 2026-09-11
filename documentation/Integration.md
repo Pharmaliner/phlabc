@@ -122,11 +122,46 @@ Note: This process explicitly removes outdated category relations for permission
 
 ---
 
-## 7. Voting Strategies Configuration
+## 7. Cleaning Up Obsolete Roles and Permissions
+
+Roles and permissions defined in YAML are imported into the database via `abc:import`.
+
+When entries are later renamed or removed from YAML, the corresponding database entries remain and become stale.
+
+The `abc:cleanup` command removes these obsolete entries.
+
+**Cleanup Command:**
+
+```bash
+php vendor/bin/typo3 abc:cleanup
+```
+
+This command scans all extension YAML files, collects every defined `permission_key` and `role_key`, and identifies database entries whose key is no longer present in any YAML file.
+
+### 7.1 Dry-Run by Default
+
+By default the command runs in dry-run mode and only reports what would be removed — no data is deleted. Affected entries are printed in a table, grouped by type (permissions and roles).
+
+To actually perform the cleanup, pass `--force` (`-f`):
+
+```bash
+php vendor/bin/typo3 abc:cleanup --force
+```
+
+### 7.2 Safeguards
+
+- If no permission or role definitions are found in the YAML files, the command aborts with an error. This prevents accidentally wiping the database when YAML loading fails silently.
+- Removals use TYPO3's soft-delete mechanism, so obsolete entries remain recoverable in the database.
+
+Note: Cleanup should typically be run after `abc:import` whenever roles or permissions have been renamed or removed from YAML.
+
+---
+
+## 8. Voting Strategies Configuration
 
 The extension uses a voting strategy system to combine decisions from multiple voters. Voting strategies can be configured in your TYPO3 service configuration.
 
-### 7.1 Available Strategies
+### 8.1 Available Strategies
 
 #### Unanimous Strategy (Default)
 - **Any DENY → Access denied**
@@ -143,7 +178,7 @@ Best for: Multiple alternative paths to access ("user is admin OR owner OR edito
 
 ---
 
-### 7.2 Configuration in Services.yaml
+### 8.2 Configuration in Services.yaml
 
 ```yaml
 services:
@@ -172,7 +207,7 @@ services:
 
 ---
 
-### 7.3 Strategy Selection Guidelines
+### 8.3 Strategy Selection Guidelines
 
 **Use Unanimous (default) when:**
 
@@ -238,7 +273,8 @@ The extension integration involves:
 1. **Configuration via composer.json** – Define paths to permission, role, and preset YAML files
 2. **YAML file definitions** – Define permissions, roles, and preset mappings
 3. **Import command** – Synchronize YAML configurations with the system
-4. **Voting strategy configuration** – Configure how multiple voter decisions are combined
-5. **Per-call customization** – Override strategies when needed for specific checks
+4. **Cleanup command** – Remove database entries no longer defined in YAML
+5. **Voting strategy configuration** – Configure how multiple voter decisions are combined
+6. **Per-call customization** – Override strategies when needed for specific checks
 
 This flexible approach allows for centralized permission management while supporting complex access control scenarios through the voting system.
