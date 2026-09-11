@@ -2,10 +2,14 @@
 
 namespace Pharmaline\PhlAbc\Domain\Repository;
 
+use Pharmaline\PhlAbc\Domain\Model\Permission;
 use Pharmaline\PhlAbc\Utility\StorageConfigurationUtility;
 use TYPO3\CMS\Extbase\Persistence\Exception\InvalidQueryException;
 use TYPO3\CMS\Extbase\Persistence\Repository;
 
+/**
+ * @extends Repository<Permission>
+ */
 class PermissionRepository extends Repository
 {
     /**
