@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Pharmaline\PhlAbc\Service;
 
+use Pharmaline\PhlAbc\Domain\Dto\OperationResult;
 use Pharmaline\PhlAbc\Domain\Model\Role;
 use Pharmaline\PhlAbc\Domain\Repository\RoleRepository;
 use Pharmaline\PhlAbc\Exception\MissingKeyAttributeInYamlFileException;
@@ -40,7 +41,6 @@ class RoleService
 
     /**
      * @param array<array<RoleDefinition>> $content
-     * @return void
      * @throws IllegalObjectTypeException
      * @throws MissingKeyAttributeInYamlFileException
      * @throws MissingRoleKeyDefinitionInObjectException
@@ -56,8 +56,51 @@ class RoleService
     }
 
     /**
-     * @return void
+     * Identifies and removes obsolete roles from the database.
+     *
+     * Any role in the database not present in $validRoleKeys is considered obsolete.
+     *
+     * - If $dryRun is true: Returns the list of obsolete roles without modifying the database.
+     * - If $dryRun is false: Soft-deletes the obsolete roles and persists the changes.
+     *
+     * @param array<int, string> $validRoleKeys List of valid role keys defined in YAML config file(s).
+     * @param bool $dryRun If true, only reports what would be deleted without executing.
+     *
+     * @return OperationResult Contains the list of removed/removed-to-be role keys.
      */
+    public function cleanupObsoleteRoles(array $validRoleKeys, bool $dryRun = true): OperationResult
+    {
+        $this->configureRepository();
+
+        $result = new OperationResult();
+
+        // Find all non-deleted roles in DB
+        $allRoles = $this->roleRepository->findAll();
+
+        foreach ($allRoles as $role) {
+            if (!in_array($role->getRoleKey(), $validRoleKeys, true)) {
+                $this->logger->log(
+                    LogLevel::INFO,
+                    sprintf('Remove obsolete role %s', $role->getRoleKey()),
+                    ['role' => $this->captureRoleState($role)]
+                );
+
+                $result->recordRemoved($role->getRoleKey());
+
+                if (!$dryRun) {
+                    $this->roleRepository->remove($role);
+                    $this->logRemovedRole($role);
+                }
+            }
+        }
+
+        if (!$dryRun) {
+            $this->persistenceManager->persistAll();
+        }
+
+        return $result;
+    }
+
     private function configureRepository(): void
     {
         $this->typo3QuerySettings->setRespectStoragePage(false);
@@ -66,7 +109,6 @@ class RoleService
 
     /**
      * @param array<RoleDefinition> $roleDefinitions
-     * @return void
      * @throws IllegalObjectTypeException
      * @throws MissingKeyAttributeInYamlFileException
      * @throws MissingRoleKeyDefinitionInObjectException
@@ -83,7 +125,6 @@ class RoleService
     /**
      * @param RoleDefinition $definition
      * @param int|string $index
-     * @return void
      * @throws MissingKeyAttributeInYamlFileException
      */
     private function validateRoleDefinition(array $definition, int|string $index): void
@@ -94,7 +135,7 @@ class RoleService
                     sprintf(
                         'Missing key: %s in role yaml file for role definition: %s',
                         $field,
-                        (string) $index
+                        (string)$index
                     )
                 );
             }
@@ -103,7 +144,6 @@ class RoleService
 
     /**
      * @param RoleDefinition $yamlDefinition
-     * @return void
      * @throws IllegalObjectTypeException
      * @throws MissingRoleKeyDefinitionInObjectException
      * @throws UnknownObjectException
@@ -177,7 +217,6 @@ class RoleService
     /**
      * @param Role $role
      * @param RoleDefinition $yamlDefinition
-     * @return void
      */
     private function updateRoleFromYaml(Role $role, array $yamlDefinition): void
     {
@@ -195,7 +234,6 @@ class RoleService
 
     /**
      * @param Role $role
-     * @return void
      * @throws MissingRoleKeyDefinitionInObjectException
      */
     private function validateRole(Role $role): void
@@ -211,7 +249,6 @@ class RoleService
     /**
      * @param Role $role
      * @param bool $isNew
-     * @return void
      * @throws IllegalObjectTypeException
      * @throws UnknownObjectException
      */
@@ -243,13 +280,12 @@ class RoleService
 
     /**
      * @param Role $role
-     * @return void
      */
     private function logNewRole(Role $role): void
     {
         $this->logger->log(
             LogLevel::INFO,
-            sprintf('Add new role %s', (string) $role->getRoleKey()),
+            sprintf('Add new role %s', (string)$role->getRoleKey()),
             [
                 'role' => [
                     'title' => $role->getTitle(),
@@ -263,16 +299,33 @@ class RoleService
     /**
      * @param Role $role
      * @param array<string, string|null> $oldState
-     * @return void
      */
     private function logUpdatedRole(Role $role, array $oldState): void
     {
         $this->logger->log(
             LogLevel::INFO,
-            sprintf('Update role %s', (string) $role->getRoleKey()),
+            sprintf('Update role %s', (string)$role->getRoleKey()),
             [
                 'old_role' => $oldState,
                 'new_role' => $this->captureRoleState($role),
+            ]
+        );
+    }
+
+    /**
+     * @param Role $role
+     */
+    private function logRemovedRole(Role $role): void
+    {
+        $this->logger->log(
+            LogLevel::INFO,
+            sprintf('Remove role %s', (string)$role->getRoleKey()),
+            [
+                'role' => [
+                    'title' => $role->getTitle(),
+                    'description' => $role->getDescription(),
+                    'role_key' => $role->getRoleKey(),
+                ],
             ]
         );
     }

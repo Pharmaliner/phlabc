@@ -9,8 +9,8 @@ use TYPO3\CMS\Extbase\Persistence\ObjectStorage;
 class Role extends AbstractEntity
 {
     protected string $roleKey;
-    protected string $title;
-    protected string $description;
+    protected string $title = '';
+    protected string $description = '';
     protected ?int $customRole = null;
     protected string $titleTranslationKey = '';
     protected string $descriptionTranslationKey = '';

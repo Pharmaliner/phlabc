@@ -29,6 +29,7 @@ We hope this extension helps you equip your TYPO3 projects with robust and flexi
       - [5.1 Wildcard *](./documentation/Integration.md#51-wildcard-)
       - [5.2 Partial Wildcards PART_OF_PERMISSION_NAME_*](./documentation/Integration.md#52-partial-wildcards-part_of_permission_name_)
     - [6. Importing the Configuration](./documentation/Integration.md#6-importing-the-configuration)
+    - [7. Cleaning Up Obsolete Roles and Permissions](./documentation/Integration.md#7-cleaning-up-obsolete-roles-and-permissions)
   - [Usage Guide 📘](./documentation/usage/UsageGuide.md)
     - [Checking User Permissions 🔐](./documentation/usage/UsageGuide.md#checking-user-permissions-)
     - [How It Works 🧠](./documentation/usage/UsageGuide.md#how-it-works-)
