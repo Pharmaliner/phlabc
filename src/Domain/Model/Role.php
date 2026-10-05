@@ -16,22 +16,10 @@ class Role extends AbstractEntity
     protected string $descriptionTranslationKey = '';
 
     /**
-     * @var ?ObjectStorage<FrontendUser>
-     */
-    #[Lazy()]
-    public ?ObjectStorage $frontendUsers = null;
-
-    /**
      * @var ?ObjectStorage<Permission>
      */
     #[Lazy()]
     public ?ObjectStorage $permissions = null;
-
-    /**
-     * @var ?ObjectStorage<FrontendGroup>
-     */
-    #[Lazy()]
-    public ?ObjectStorage $frontendGroups = null;
 
     /**
      * @var ?ObjectStorage<Permission>
@@ -45,8 +33,6 @@ class Role extends AbstractEntity
     {
         $this->permissions = new ObjectStorage();
         $this->permissionsDeny = new ObjectStorage();
-        $this->frontendGroups = new ObjectStorage();
-        $this->frontendUsers = new ObjectStorage();
     }
 
     /**
@@ -92,38 +78,6 @@ class Role extends AbstractEntity
     }
 
     /**
-     * @return ?ObjectStorage<FrontendUser>
-     */
-    public function getFrontendUsers(): ?ObjectStorage
-    {
-        return $this->frontendUsers;
-    }
-
-    /**
-     * @param ?ObjectStorage<FrontendUser> $frontendUsers
-     */
-    public function setFrontendUsers(?ObjectStorage $frontendUsers): void
-    {
-        $this->frontendUsers = $frontendUsers;
-    }
-
-    /**
-     * @param FrontendUser $frontendUser
-     */
-    public function addFrontendUser(FrontendUser $frontendUser): void
-    {
-        $this->frontendUsers?->attach($frontendUser);
-    }
-
-    /**
-     * @param FrontendUser $frontendUser
-     */
-    public function removeFrontendUser(FrontendUser $frontendUser): void
-    {
-        $this->frontendUsers?->detach($frontendUser);
-    }
-
-    /**
      * @return ?ObjectStorage<Permission>
      */
     public function getPermissions(): ?ObjectStorage
@@ -153,38 +107,6 @@ class Role extends AbstractEntity
     public function removePermission(Permission $permission): void
     {
         $this->permissions?->detach($permission);
-    }
-
-    /**
-     * @return ?ObjectStorage<FrontendGroup>
-     */
-    public function getFrontendGroups(): ?ObjectStorage
-    {
-        return $this->frontendGroups;
-    }
-
-    /**
-     * @param ?ObjectStorage<FrontendGroup> $frontendGroups
-     */
-    public function setFrontendGroups(?ObjectStorage $frontendGroups): void
-    {
-        $this->frontendGroups = $frontendGroups;
-    }
-
-    /**
-     * @param FrontendGroup $frontendGroup
-     */
-    public function addFrontendGroup(FrontendGroup $frontendGroup): void
-    {
-        $this->frontendGroups?->attach($frontendGroup);
-    }
-
-    /**
-     * @param FrontendGroup $frontendGroup
-     */
-    public function removeFrontendGroup(FrontendGroup $frontendGroup): void
-    {
-        $this->frontendGroups?->detach($frontendGroup);
     }
 
     /**
