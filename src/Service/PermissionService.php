@@ -12,6 +12,8 @@ use Pharmaline\PhlAbc\Exception\MissingRoleKeyDefinitionInObjectException;
 use Pharmaline\PhlAbc\Utility\StorageConfigurationUtility;
 use Psr\Log\LoggerInterface;
 use Psr\Log\LogLevel;
+use TYPO3\CMS\Core\Database\Connection;
+use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Extbase\Domain\Model\Category;
 use TYPO3\CMS\Extbase\Persistence\Exception\IllegalObjectTypeException;
 use TYPO3\CMS\Extbase\Persistence\Exception\UnknownObjectException;
@@ -33,11 +35,16 @@ class PermissionService
     /** @var array<int, string> */
     private const array REQUIRED_FIELDS = ['permission_key', 'title', 'description'];
 
+    private const string PERMISSION_TABLE = 'tx_phlabc_domain_model_permission';
+
+    private const string CATEGORY_MM_TABLE = 'sys_category_record_mm';
+
     public function __construct(
         private readonly PermissionRepository $permissionRepository,
         private readonly LoggerInterface $logger,
         private readonly PersistenceManagerInterface $persistenceManager,
-        private readonly Typo3QuerySettings $typo3QuerySettings
+        private readonly Typo3QuerySettings $typo3QuerySettings,
+        private readonly ConnectionPool $connectionPool
     ) {
     }
 
@@ -100,6 +107,80 @@ class PermissionService
         if (!$dryRun) {
             $this->persistenceManager->persistAll();
         }
+
+        return $result;
+    }
+
+    /**
+     * Removes category relations whose permission record no longer exists.
+     *
+     * Such orphans remain when permission records are deleted directly in the database. Once a new
+     * permission gets the same uid again, adding its category fails with a duplicate key error.
+     *
+     * @param bool $dryRun If true, only reports the orphaned relations without deleting them.
+     *
+     * @return OperationResult Contains one entry per orphaned relation ("category <uid> -> permission <uid>").
+     */
+    public function removeOrphanedCategoryRelations(bool $dryRun = true): OperationResult
+    {
+        $result = new OperationResult();
+
+        $queryBuilder = $this->connectionPool->getQueryBuilderForTable(self::CATEGORY_MM_TABLE);
+        $queryBuilder->getRestrictions()->removeAll();
+        $orphans = $queryBuilder
+            ->select('mm.uid_local', 'mm.uid_foreign')
+            ->from(self::CATEGORY_MM_TABLE, 'mm')
+            ->leftJoin(
+                'mm',
+                self::PERMISSION_TABLE,
+                'p',
+                $queryBuilder->expr()->eq('p.uid', $queryBuilder->quoteIdentifier('mm.uid_foreign'))
+            )
+            ->where(
+                $queryBuilder->expr()->eq('mm.tablenames', $queryBuilder->createNamedParameter(self::PERMISSION_TABLE)),
+                $queryBuilder->expr()->isNull('p.uid')
+            )
+            ->executeQuery()
+            ->fetchAllAssociative();
+
+        if ($orphans === []) {
+            return $result;
+        }
+
+        $orphanedPermissionUids = [];
+        foreach ($orphans as $orphan) {
+            $result->recordRemoved(
+                sprintf('category %d -> permission %d', (int)$orphan['uid_local'], (int)$orphan['uid_foreign'])
+            );
+            $orphanedPermissionUids[] = (int)$orphan['uid_foreign'];
+        }
+
+        if ($dryRun) {
+            return $result;
+        }
+
+        $deleteQueryBuilder = $this->connectionPool->getQueryBuilderForTable(self::CATEGORY_MM_TABLE);
+        $deleteQueryBuilder
+            ->delete(self::CATEGORY_MM_TABLE)
+            ->where(
+                $deleteQueryBuilder->expr()->eq(
+                    'tablenames',
+                    $deleteQueryBuilder->createNamedParameter(self::PERMISSION_TABLE)
+                ),
+                $deleteQueryBuilder->expr()->in(
+                    'uid_foreign',
+                    $deleteQueryBuilder->createNamedParameter(
+                        array_values(array_unique($orphanedPermissionUids)),
+                        Connection::PARAM_INT_ARRAY
+                    )
+                )
+            )
+            ->executeStatement();
+
+        $this->logger->warning(
+            'Removed orphaned permission category relations',
+            ['relations' => $result->getRemoved()]
+        );
 
         return $result;
     }

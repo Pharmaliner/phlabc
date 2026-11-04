@@ -63,6 +63,15 @@ class ImportAbcCommand extends Command
             }
         }
 
+        // Orphaned relations would collide with permissions that get a reused uid
+        $orphans = $this->permissionService->removeOrphanedCategoryRelations(false)->getRemoved();
+        if ($orphans !== []) {
+            $output->writeln(sprintf(
+                '<comment>Removed %d orphaned permission category relation(s).</comment>',
+                count($orphans)
+            ));
+        }
+
         foreach ($allPermissions as $content) {
             $this->permissionService->importIntoDatabase($content);
         }
