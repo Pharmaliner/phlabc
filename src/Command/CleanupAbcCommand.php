@@ -110,6 +110,23 @@ class CleanupAbcCommand extends Command
             $io->success(sprintf('%s %d obsolete permission(s).', $label, count($removedPermissions)));
         }
 
+        // Cleanup orphaned permission category relations
+        $result = $this->permissionService->removeOrphanedCategoryRelations($dryRun);
+        $removedRelations = $result->getRemoved();
+
+        if (empty($removedRelations)) {
+            $io->success('No orphaned permission category relations to remove.');
+        } else {
+            $header = $dryRun ? ['Category relations to be removed'] : ['Removed category relation'];
+            $io->table(
+                $header,
+                array_map(static fn(string $relation): array => [$relation], $removedRelations),
+            );
+
+            $label = $dryRun ? 'Cleanup would remove' : 'Removed';
+            $io->success(sprintf('%s %d orphaned category relation(s).', $label, count($removedRelations)));
+        }
+
         // Cleanup roles
         $result = $this->roleService->cleanupObsoleteRoles($validRoleKeys, $dryRun);
         $removedRoles = $result->getRemoved();
