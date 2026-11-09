@@ -2,7 +2,7 @@
 
 namespace Pharmaline\PhlAbc\Export\Formatter;
 
-use Pharmaline\PhlAbc\Export\PermissionMatrix;
+use Pharmaline\PhlAbc\Domain\Dto\PermissionMatrix;
 use RuntimeException;
 
 final class CsvFormatter implements PermissionMatrixFormatterInterface
@@ -24,13 +24,13 @@ final class CsvFormatter implements PermissionMatrixFormatterInterface
             throw new RuntimeException('Could not open temp stream.');
         }
 
-        fputcsv($stream, ['Permission-Key', 'Permission-Title', ...$matrix->roleKeys], ',', '"', '\\', "\r\n");
+        fputcsv($stream, ['Permission-Key', 'Permission-Title', ...$matrix->roleKeys], ',', '"', '', "\r\n");
         foreach ($matrix->rows as $row) {
             $cells = [$row['key'], $row['title']];
             foreach ($matrix->roleKeys as $roleKey) {
                 $cells[] = $row['roles'][$roleKey] ? 'yes' : 'no';
             }
-            fputcsv($stream, $cells, ',', '"', '\\', "\r\n");
+            fputcsv($stream, $cells, ',', '"', '', "\r\n");
         }
 
         rewind($stream);

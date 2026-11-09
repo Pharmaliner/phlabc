@@ -2,7 +2,7 @@
 
 namespace Pharmaline\PhlAbc\Export\Formatter;
 
-use Pharmaline\PhlAbc\Export\PermissionMatrix;
+use Pharmaline\PhlAbc\Domain\Dto\PermissionMatrix;
 
 final class MarkdownFormatter implements PermissionMatrixFormatterInterface
 {
@@ -18,18 +18,18 @@ final class MarkdownFormatter implements PermissionMatrixFormatterInterface
 
     public function format(PermissionMatrix $matrix): string
     {
-        $escape = fn($cell) => str_replace('|', '\|', (string)$cell);
+        $escape = static fn ($cell): string => str_replace('|', '\|', (string)$cell);
 
-        $header = array_map($escape, ['Permission-Key', 'Permission-Title', ...$matrix->roleKeys]);
+        $headerCells = array_map($escape, ['Permission-Key', 'Permission-Title', ...$matrix->roleKeys]);
         $lines = [
-            '| ' . implode(' | ', array_map($escape, $header)) . ' |',
-            '|' . str_repeat('---|', count($header)),
+            '| ' . implode(' | ', $headerCells) . ' |',
+            '|' . str_repeat('---|', count($headerCells)),
         ];
 
         foreach ($matrix->rows as $row) {
             $cells = [
                 $escape($row['key']),
-                $escape($row['title'])
+                $escape($row['title']),
             ];
 
             foreach ($matrix->roleKeys as $roleKey) {

@@ -1,6 +1,6 @@
 <?php
 
-namespace Pharmaline\PhlAbc\Export;
+namespace Pharmaline\PhlAbc\Domain\Dto;
 
 /**
  * @phpstan-type PermissionRow array{key: string, title: string, roles: array<string, bool>}
