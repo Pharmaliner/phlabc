@@ -2,7 +2,7 @@
 
 namespace Pharmaline\PhlAbc\Export\Formatter;
 
-use Pharmaline\PhlAbc\Export\PermissionMatrix;
+use Pharmaline\PhlAbc\Domain\Dto\PermissionMatrix;
 
 interface PermissionMatrixFormatterInterface
 {

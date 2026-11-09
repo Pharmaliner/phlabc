@@ -85,7 +85,17 @@ We hope this extension helps you equip your TYPO3 projects with robust and flexi
           - [4. Matrix Structure](./documentation/usage/Export.md#4-matrix-structure)
           - [5. Typical Use Cases](./documentation/usage/Export.md#5-typical-use-cases)
           - [6. Summary](./documentation/usage/Export.md#6-summary)
-    -
+      - [Generate a presets.yaml from permission matrix](documentation/usage/GeneratePresetsYamlFromPermissionMatrix.md)
+          - [Overview](./documentation/usage/GeneratePresetsYamlFromPermissionMatrix.md#overview)
+          - [1. Command](./documentation/usage/GeneratePresetsYamlFromPermissionMatrix.md#1-command)
+          - [2. Options](./documentation/usage/GeneratePresetsYamlFromPermissionMatrix.md#2-options)
+          - [3. Input](./documentation/usage/GeneratePresetsYamlFromPermissionMatrix.md#3-input)
+              - [3.1 Markdown (md)](./documentation/usage/GeneratePresetsYamlFromPermissionMatrix.md#31-markdown-md)
+              - [3.2 CSV (csv)](./documentation/usage/GeneratePresetsYamlFromPermissionMatrix.md#32-csv-csv)
+              - [3.3 Strictness](./documentation/usage/GeneratePresetsYamlFromPermissionMatrix.md#33-strictness)
+          - [4. Output](./documentation/usage/GeneratePresetsYamlFromPermissionMatrix.md#4-output)
+          - [5. Typical Use Cases](./documentation/usage/GeneratePresetsYamlFromPermissionMatrix.md#5-typical-use-cases)
+          - [6. Summary](./documentation/usage/GeneratePresetsYamlFromPermissionMatrix.md#6-summary)
 - [Contact](#contact)
 
 ## Contact

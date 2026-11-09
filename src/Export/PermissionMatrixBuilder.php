@@ -2,6 +2,7 @@
 
 namespace Pharmaline\PhlAbc\Export;
 
+use Pharmaline\PhlAbc\Domain\Dto\PermissionMatrix;
 use Pharmaline\PhlAbc\Service\ComposerService;
 use Pharmaline\PhlAbc\Service\YamlService;
 use RuntimeException;
@@ -42,9 +43,7 @@ final class PermissionMatrixBuilder
 
         foreach ($this->composerService->getYamlFilesOfExtension() as $package) {
             foreach ($package as $key => $path) {
-                if (isset($defs[$key])) {
-                    $defs[$key][] = $this->yamlService->loadFile($path);
-                }
+                $defs[$key][] = $this->yamlService->loadFile($path);
             }
         }
         return $defs;
