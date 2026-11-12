@@ -12,7 +12,7 @@
          displayDetailsOnTestsThatTriggerWarnings="true">
     <source>
         <include>
-            <directory suffix=".php">../../Classes</directory>
+            <directory suffix=".php">../../src</directory>
         </include>
     </source>
     <testsuites>
