@@ -2,10 +2,16 @@
 
 defined('TYPO3') or die();
 
+use Pharmaline\PhlAbc\UserFuncs\TCA\LabelUserFunc;
+
 return [
     'ctrl' => [
         'title' => 'LLL:EXT:phlabc/Resources/Private/Language/locallang_db.xlf:tx_phlabc_domain_model_permission',
         'label' => 'title',
+        'label_userFunc' => LabelUserFunc::class . '->getLabel',
+        'label_userFunc_options' => [
+            'keyField' => 'permission_key',
+        ],
         'tstamp' => 'tstamp',
         'crdate' => 'crdate',
         'cruser_id' => 'cruser_id',
