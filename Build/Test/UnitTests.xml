@@ -1,0 +1,23 @@
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/10.5/phpunit.xsd"
+         backupGlobals="false"
+         bootstrap="../../.Build/vendor/typo3/testing-framework/Resources/Core/Build/UnitTestsBootstrap.php"
+         colors="true"
+         processIsolation="false"
+         stopOnError="true"
+         stopOnFailure="true"
+         stopOnIncomplete="false"
+         stopOnSkipped="false"
+         displayDetailsOnTestsThatTriggerDeprecations="true"
+         displayDetailsOnTestsThatTriggerWarnings="true">
+    <source>
+        <include>
+            <directory suffix=".php">../../src</directory>
+        </include>
+    </source>
+    <testsuites>
+        <testsuite name="ext_phlabc-unit-tests">
+            <directory>../../Tests/Unit/</directory>
+        </testsuite>
+    </testsuites>
+</phpunit>

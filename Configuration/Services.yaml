@@ -7,6 +7,8 @@ services:
   _instanceof:
     Pharmaline\PhlAbc\Export\Formatter\PermissionMatrixFormatterInterface:
       tags: [ 'app.permission_matrix_formatter' ]
+    Pharmaline\PhlAbc\Import\Parser\PermissionMatrixParserInterface:
+      tags: [ 'app.permission_matrix_parser' ]
 
   Pharmaline\PhlAbc\:
     resource: '../src/*'
@@ -27,3 +29,7 @@ services:
   Pharmaline\PhlAbc\Export\Formatter\PermissionMatrixFormatterRegistry:
     arguments:
       $formatters: !tagged_iterator app.permission_matrix_formatter
+
+  Pharmaline\PhlAbc\Import\Parser\PermissionMatrixParserRegistry:
+    arguments:
+      $parsers: !tagged_iterator app.permission_matrix_parser
