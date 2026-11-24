@@ -90,25 +90,18 @@ return [
         'roles' => [
             'label' => 'LLL:EXT:phlabc/Resources/Private/Language/locallang_db.xlf:tx_phlabc_domain_model_permission.roles',
             'config' => [
-                'type' => 'select',
-                'renderType' => 'selectMultipleSideBySide',
-                'foreign_table' => 'tx_phlabc_domain_model_role',
-                'MM' => 'tx_phlabc_role_permission_mm',
-                'size' => 10,
-                'autoSizeMax' => 30,
-                'multiple' => 0,
+                'type' => 'passthrough'
             ],
         ],
         'roles_deny' => [
             'label' => 'LLL:EXT:phlabc/Resources/Private/Language/locallang_db.xlf:tx_phlabc_domain_model_permission.roles_deny',
             'config' => [
-                'type' => 'select',
-                'renderType' => 'selectMultipleSideBySide',
-                'foreign_table' => 'tx_phlabc_domain_model_role',
+                'type' => 'group',
+                'allowed' => 'tx_phlabc_domain_model_role',
                 'MM' => 'tx_phlabc_role_permission_deny_mm',
                 'size' => 10,
                 'autoSizeMax' => 30,
-                'multiple' => 0,
+                'multiple' => true,
             ],
         ],
     ],
